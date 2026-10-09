@@ -13,6 +13,7 @@ import {
   ColorJsAdapter,
   createGradient as legacyGradient,
   generateHarmony as legacyHarmony,
+  generateColorStudy as legacyColorStudy,
   generateTonalPalette as legacyTonal,
   sampleGradient as legacyGradientSample,
 } from "../../dist/index.js";
@@ -290,5 +291,39 @@ test("all 148 CSS named color keywords match legacy and canonical HEX", async ()
     assert.equal(parsed.space, "srgb", name);
     assert.equal(rust.formatHex(parsed), hex, name);
     assert.equal(legacy.formatHex(name).toLowerCase(), hex, "legacy " + name);
+  }
+});
+
+
+function legacyRandom(seed) {
+  let value = seed >>> 0;
+  return () => {
+    value += 0x6d2b79f5;
+    let result = value;
+    result = Math.imul(result ^ (result >>> 15), result | 1);
+    result ^= result + Math.imul(result ^ (result >>> 7), result | 61);
+    return ((result ^ (result >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+test("seeded Color Study swatches remain perceptually close to the old UI generator", () => {
+  const seeds = [0, 5, 123, 99271];
+  const base = { space: "srgb", channels: [0.2, 0.4, 0.6], alpha: 1 };
+  for (const randomSeed of seeds) {
+    const options = { randomSeed, lightness: 58, chroma: 58, hueRange: 58, toneRange: 58 };
+    const actual = rust.colorStudy(base, options);
+    const expected = legacyColorStudy(ts(base), { random: legacyRandom(randomSeed),
+      lightness: 58, chroma: 58, hueRange: 58, toneRange: 58 });
+    assert.equal(actual.scheme.replaceAll("Complementary", "-complementary"),
+      expected.scheme, "study scheme " + randomSeed);
+    assert.equal(actual.colors.length, expected.colors.length);
+    for (let i = 0; i < actual.colors.length; ++i) {
+      const old = expected.colors[i].value;
+      const distance = rust.difference(actual.colors[i].color,
+        { space: old.space === "p3" ? "display-p3" : old.space,
+          channels: old.coordinates, alpha: old.alpha }, "ok");
+      assert.ok(distance < 0.04, "study " + randomSeed + " color " + i +
+        " difference to old UI: " + distance);
+    }
   }
 });
