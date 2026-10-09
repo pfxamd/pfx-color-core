@@ -9,6 +9,8 @@
 //! shared between threads without caller-side synchronization.
 //! C/WASM/JS callers must use ABI revision pfx_abi_version() == 1.
 
+mod image_ffi;
+
 use pfx_color_core::{
     anchored_palette, contrast_ratio, difference, format_css, format_hex, generate_color_study,
     generate_custom_harmony, generate_harmony, interpolate, is_in_gamut, map_to_gamut, parse_css,
