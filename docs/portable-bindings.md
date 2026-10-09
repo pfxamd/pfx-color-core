@@ -74,6 +74,63 @@ The JS gradient returns an owned object; call dispose() when finished.
 Node.js integration smoke tests are run against the actual built .wasm binary
 using built-in node:test, not a mock or JavaScript reimplementation.
 
+## Opt-in CSS pixel geometry gradients
+
+The pre-existing `createGradient(stops, options)` / `pfx_gradient_*` functions remain
+unchanged: they use normalized, unit-square positions. A **separate** builder
+`createCssGradient(stops, options)` and `pfx_css_gradient_*` C ABI samples
+actual CSS pixel coordinates. No new runtime dependencies are required.
+
+JavaScript example (real Rust WASM):
+
+```js
+const red = core.parseCss("#ff0000");
+const blue = core.parseCss("#0000ff");
+const gradient = core.createCssGradient(
+  [{ position: 0.2, color: red }, { position: 0.4, color: blue }],
+  {
+    width: 240, height: 120, kind: "linear", angle: 45,
+    repeating: true, space: "srgb", target: "srgb", gamut: "clip",
+  },
+);
+try {
+  const atPixelCenter = gradient.samplePixel(50.5, 20.5);
+  const atProgress = gradient.sampleProgress(0.35);
+} finally {
+  gradient.dispose();
+}
+```
+
+- `width` / `height` are positive CSS-pixel box dimensions, required.
+- `kind`: `linear`, `radial`, or `conic`. `angle` is degrees clockwise
+  from upward direction (conic: start angle); `centerX` / `centerY` are
+  **CSS pixels**, defaulting to the center of the box.
+- For `radial`, `radialShape` is `circle` or `ellipse`;
+  `radialExtent` supports `closest-side`, `farthest-side`,
+  `closest-corner`, `farthest-corner`, and `explicit`.
+  Explicit radii are `radiusX` and `radiusY` in CSS pixels;
+  circle radii must match and be positive.
+- Stops are **ordered** and have finite, explicit fractional positions
+  (`0.2` represents 20%, negative and >1 positions are valid);
+  out-of-order positions are raised to the previous stop as in CSS Images.
+  Duplicate positions create sharp transitions; no need to sort input.
+- `repeating: true` repeats by the first-to-last stop interval.
+  A zero-length repeating period produces the W3C-specified uniformly
+  averaged premultiplied sRGBA color, including its alpha component.
+- The C equivalents use `pfx_css_gradient_new`,
+  `pfx_css_gradient_add_stop`, `pfx_css_gradient_sample_pixel`,
+  `pfx_css_gradient_sample_progress`, `pfx_css_gradient_free`.
+  See `bindings/c/pfx_color_core.h` for the exact argument and enum codes.
+
+Representative Rust-sampled pixels are compared against **actual CSS gradient
+screenshots**, decoded in the same real headless Chromium/Firefox process, at
+1440×900 and 390×844 browser viewports. Those are **viewports, not physical
+mobile devices**. This is not yet a full CSS Images 3/4 parser: optional/dual
+stop positions, transition hints, degenerate radial edge cases, subpixel
+resolution/dithering exactness, and full CSS missing-channel propagation
+remain separate migration tasks. The production React application is not
+switched to this engine.
+
 ## Decoded image palette extraction
 
 The independent Rust core can extract up to 32 perceptually clustered
