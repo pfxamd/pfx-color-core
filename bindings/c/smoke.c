@@ -129,6 +129,30 @@ int main(void) {
     CHECK(isfinite(pfx_study_oklch(study, 4, 0)));
     pfx_study_free(study);
 
+    /* Real decoded RGBA8 native image extraction, no image dependency. */
+    const uint8_t rgba[] = {
+        255, 0, 0, 255, 255, 0, 0, 255,
+        0, 0, 255, 255, 255, 0, 0, 255
+    };
+    PfxImagePalette *image = pfx_image_new(
+        rgba, sizeof(rgba), 2, 2, 2, 1, 100, 128, 0, 0, 0, 0, 0
+    );
+    CHECK(image != NULL);
+    CHECK(pfx_image_len(image) == 2);
+    CHECK(pfx_image_sampled(image) == 4);
+    CHECK(pfx_image_eligible(image) == 4);
+    CHECK(pfx_image_population(image, 0) == 3);
+    CHECK(fabs(pfx_image_proportion(image, 0) - 0.75) < 1e-12);
+    CHECK(pfx_image_get(image, 0, &out) == 0);
+    CHECK(out.space == PFX_SRGB && fabs(out.channels[0] - 1.0) < 1e-12);
+    CHECK(pfx_image_get(image, 3, &out) == -4);
+    pfx_image_free(image);
+    uint8_t *upload = pfx_image_buffer_new(sizeof(rgba));
+    CHECK(upload != NULL);
+    pfx_image_buffer_free(upload, sizeof(rgba));
+    CHECK(pfx_image_new(NULL, sizeof(rgba), 2, 2, 2, 1, 100, 128, 0,
+                        0, 0, 0, 0) == NULL);
+
     CHECK(pfx_color_convert(NULL, PFX_SRGB, &out) == -1);
     CHECK(pfx_color_set(&out, 888, 0.0, 0.0, 0.0, 1.0) == -2);
     CHECK(isnan(pfx_color_difference(NULL, &white, PFX_DELTA_E_OK)));
