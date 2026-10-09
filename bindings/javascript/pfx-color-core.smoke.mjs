@@ -270,3 +270,25 @@ test("Rust image input validation rejects unsafe or malformed memory shapes", ()
   assert.throws(() => api.extractImagePalette(tiny, 1, 1, { maxSamples: 500001 }), /maxSamples/);
   assert.throws(() => api.extractImagePalette(tiny, 9000, 9000), /64 MiB/);
 });
+
+test("lossless CSS none bridge parses, serializes, interpolates, and validates masks", () => {
+  const a = api.parseCssMissing("oklch(none 0.2 none / none)");
+  assert.equal(a.space, "oklch");
+  assert.equal(a.missingMask, 13);
+  assert.equal(a.alpha, 0);
+  assert.equal(api.parseCssMissing(api.formatCssMissing(a)).missingMask, 13);
+  const b = api.parseCssMissing("oklch(0.6 0.3 250 / 0.4)");
+  const mixed = api.interpolateCssMissing(a, b, 0.5, { space: "oklch" });
+  assert.equal(mixed.missingMask, 0);
+  assert.ok(Math.abs(mixed.channels[0] - 0.6) < 1e-8);
+  assert.ok(Math.abs(mixed.channels[2] - 250) < 1e-8);
+  assert.ok(Math.abs(mixed.alpha - 0.4) < 1e-8);
+  const converted = api.convertCssMissing(a, "srgb");
+  assert.equal(converted.missingMask, 0);
+  assert.equal(converted.space, "srgb");
+  assert.throws(() => api.parseCssMissing("rgba(none, 0, 0, 1)"));
+  assert.throws(() => api.parseCssMissing("rgb(var(--x) 0 none)"));
+  assert.throws(() => api.formatCssMissing({ ...a, missingMask: 16 }), /mask/);
+  assert.equal(api.parseCss("rgb(10 20 30)").space, "srgb");
+  assert.throws(() => api.parseCss("rgb(none 20 30)"));
+});
