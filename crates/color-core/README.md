@@ -40,7 +40,7 @@ The [Rust CI workflow](../../.github/workflows/rust-core-ci.yml) additionally ch
 
 - Full CSS Color 4 grammar: `none`, basic typed `calc()` and literal-origin relative colors are implemented in the **separate opt-in CSS API**. External `var()`, `currentColor`, other CSS math functions, full Color 4 resolution and integration with the legacy picker/workspace or arbitrary gradients remain unsupported
 - Specialized spaces/algorithms such as OKHSL/OKHSV, Delta-E ITP, Jz/HCT; APCA is **excluded** from this Apache-2.0 Rust engine pending licensing/integration review
-- **Full** CSS gradient parsing/rendering conformance: optional/dual stops, color hints, degenerate radial shapes, general CSS image grammar, subpixel period/dithering guarantees and real-UI integration. Representative pixel-sized CSS gradients are now compared to screenshots in Chromium/Firefox, but that is not exhaustive pixel-exact conformance.
+- **Full** CSS gradient parsing/rendering conformance: optional/dual stops, color hints, degenerate radial shapes, general CSS image grammar, subpixel period/dithering guarantees and real-UI integration. Representative nondegenerate CSS pixel gradients are compared to screenshots in Chromium/Firefox; zero-period repeating uses the W3C weighted average even where Chromium may produce the last stop. Browser CI logs this known divergence rather than declaring exhaustive pixel-exact conformance.
 - Compressed PNG/JPEG/WebP decoding, ICC color management or guaranteed ColorThief visual equivalence (the **decoded RGBA8 extractor is implemented**)
 - Complete production React UI parity and native Windows/macOS validation; a stable Rust/FFI production release
 
