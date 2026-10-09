@@ -13,12 +13,12 @@ pub mod contrast;
 pub mod conversion;
 pub mod css;
 pub mod css_expression;
+pub mod css_gradients;
 pub mod css_missing;
 pub mod cylindrical;
 pub mod difference;
 pub mod gamut;
 pub mod gradients;
-pub mod css_gradients;
 pub mod harmony;
 pub mod images;
 pub mod interpolation;
@@ -30,13 +30,16 @@ pub mod study;
 pub use contrast::{contrast_ratio, relative_luminance};
 pub use conversion::convert;
 pub use css::{format_css, format_hex, parse_css};
+pub use css_gradients::{
+    CssGradient, CssGradientKind, CssGradientOptions, CssRadialExtent, CssRadialShape,
+    CssRadialSize,
+};
 pub use css_missing::{
     format_css_missing, interpolate_css_missing, parse_css_missing, CssColor, MISSING_ALL,
 };
 pub use difference::{difference, DifferenceMethod};
 pub use gamut::{is_in_gamut, map_to_gamut, GamutMap};
 pub use gradients::{Gradient, GradientKind, GradientOptions, GradientSample, GradientStop};
-pub use css_gradients::{CssGradient, CssGradientKind, CssGradientOptions, CssRadialExtent, CssRadialShape, CssRadialSize};
 pub use harmony::{
     generate_custom_harmony, generate_harmony, Harmony, HarmonyColor, HarmonyOptions, HarmonyScheme,
 };
