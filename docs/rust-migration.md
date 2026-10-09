@@ -15,6 +15,10 @@ GitHub CI tools are build infrastructure, not runtime dependencies.
 - `math/`: numeric primitives, linear matrices, signed transfer functions, white points.
 - `spaces/`: explicit space identifiers, validated color coordinates and alpha.
 - `conversion/`: D65 XYZ routing, D50 Bradford adaptation, CIE Lab/LCH and Oklab/OKLCH transforms.
+- `difference/`: CIE76, CIEDE2000 and Delta-E OK.
+- `contrast/`: WCAG opaque sRGB luminance and contrast ratio, with explicit refusal of unspecified compositing.
+- `interpolation/`: alpha-premultiplied interpolation in color-space coordinates with explicit hue paths.
+- `gamut/`: bounded RGB checks, clipping and a documented Oklch radial chroma strategy.
 
 No React, JavaScript packages, browser APIs, host filesystem, display pipeline
 or profile-management logic belongs in the computational core.
@@ -44,11 +48,18 @@ JavaScript glue, and C ABI are **not yet implemented**.
 
 ## Migration stages
 
-1. Reference-tested mathematical base and color-space conversions (this milestone).
-2. Gamut checking/mapping, interpolation, perceptual difference and contrast.
+1. Reference-tested mathematical base and color-space conversions (implemented).
+2. Gamut checking/mapping, interpolation, perceptual difference and WCAG contrast (implemented as separate modules).
 3. Palette, harmony and gradient generators.
 4. C ABI and WASM bindings and cross-platform integration suites.
 5. Replace the TypeScript engine only after verifying behavioral equivalence.
+
+## Limitations of milestone 2
+
+- Gamut mapping provides explicit clipping and a constant-Oklch-lightness/hue chroma search; the latter does not implement the W3C Local-MINDE algorithm.
+- WCAG 2.2 luminance/contrast is defined for opaque, sRGB-in-gamut colors. Callers must explicitly composite transparent colors and map wide-gamut colors before invoking this API.
+- The current numeric-only Color representation cannot preserve CSS missing component / `none` semantics during interpolation.
+- Tests use published numeric fixtures and boundary cases; this is not yet a full browser compatibility or visual perception validation suite.
 
 ## Releasing
 
