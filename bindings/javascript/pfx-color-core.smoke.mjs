@@ -314,3 +314,68 @@ test("typed CSS calc and relative colors are computed only in Rust WASM", () => 
   assert.throws(() => api.parseCssMissing("rgb(from var(--color) r g b)"));
   assert.throws(() => api.parseCss("rgb(from red r g b)"));
 });
+
+test("CSS pixel gradient WASM uses real box geometry without altering legacy", () => {
+  const grad = api.createCssGradient([
+    { position: 0, color: black },
+    { position: 1, color: white },
+  ], { kind: "linear", width: 240, height: 120, angle: 45,
+       space: "srgb", target: "srgb", gamut: "clip" });
+  try {
+    const at = grad.samplePixel(0, 120);
+    at.channels.forEach(channel => assert.ok(Math.abs(channel - 1 / 3) < 1e-10));
+    assert.ok(Math.abs(grad.sampleProgress(0.5).channels[0] - 0.5) < 1e-12);
+    assert.throws(() => grad.samplePixel(NaN, 20), /finite/);
+  } finally {
+    grad.dispose();
+    grad.dispose();
+  }
+  assert.throws(() => grad.samplePixel(2, 2), /disposed/);
+  const legacy = api.createGradient([
+    { position: 0, color: black }, { position: 1, color: white },
+  ], { space: "srgb", target: "srgb", gamut: "clip" });
+  try {
+    assert.equal(legacy.sampleXY(0.5, 0.5).channels[0], 0.5);
+  } finally {
+    legacy.dispose();
+  }
+});
+
+test("CSS gradients support radial shapes, repeated offsets, and nonmonotonic hard stops", () => {
+  const radial = api.createCssGradient([
+    { position: 0, color: black }, { position: 1, color: white },
+  ], { kind: "radial", width: 240, height: 120, centerX: 120, centerY: 60,
+       radialShape: "ellipse", radialExtent: "farthest-corner",
+       space: "srgb", target: "srgb", gamut: "clip" });
+  try {
+    assert.ok(Math.abs(radial.samplePixel(240, 120).channels[0] - 1) < 1e-10);
+    assert.ok(Math.abs(radial.samplePixel(240, 60).channels[0] - 1/Math.SQRT2) < 1e-10);
+  } finally {
+    radial.dispose();
+  }
+  const repeating = api.createCssGradient([
+    { position: 0.2, color: black }, { position: 0.4, color: white },
+  ], { width: 200, height: 100, repeating: true,
+       space: "srgb", target: "srgb", gamut: "clip" });
+  try {
+    const a = repeating.sampleProgress(0.3).channels;
+    const b = repeating.sampleProgress(0.5).channels;
+    a.forEach((channel, i) => assert.ok(Math.abs(channel - b[i]) < 1e-12));
+  } finally { repeating.dispose(); }
+  const hard = api.createCssGradient([
+    { position: -0.4, color: black },
+    { position: 0.6, color: black },
+    { position: 0.2, color: white },
+    { position: 1.2, color: white },
+  ], { width: 200, height: 100, space: "srgb", target: "srgb", gamut: "clip" });
+  try {
+    assert.equal(hard.sampleProgress(0.6).channels[0], 1);
+  } finally { hard.dispose(); }
+  assert.throws(() => api.createCssGradient([
+    { position: 0, color: black }, { position: 1, color: white },
+  ], { width: 0, height: 100 }), /positive/);
+  assert.throws(() => api.createCssGradient([
+    { position: 0, color: black }, { position: 1, color: white },
+  ], { width: 200, height: 100, kind: "radial",
+       radialExtent: "explicit", radiusX: 0, radiusY: 10 }), /geometry/);
+});
