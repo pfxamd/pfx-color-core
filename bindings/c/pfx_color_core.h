@@ -268,6 +268,13 @@ typedef struct PfxCssRaster PfxCssRaster;
 PfxCssRaster *pfx_css_gradient_raster_rgba8(
     const PfxCssGradient *gradient, uint32_t width, uint32_t height
 );
+/* Preview-only accelerated raster using per-stop color LUT. Output may differ
+ * slightly (a few RGBA8 units) from the exact function above; preserve exact
+ * function for exports and color-critical sampling. Same owned raster handle.
+ */
+PfxCssRaster *pfx_css_gradient_raster_preview_rgba8(
+    const PfxCssGradient *gradient, uint32_t width, uint32_t height
+);
 const uint8_t *pfx_css_raster_ptr(const PfxCssRaster *raster);
 uint32_t pfx_css_raster_len(const PfxCssRaster *raster);
 void pfx_css_raster_free(PfxCssRaster *raster);
