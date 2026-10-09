@@ -66,6 +66,13 @@ try {
             const solid = core.parseCssMissing("hsl(120 70% 50% / .8)");
             const missingMix = core.interpolateCssMissing(absent, solid, .5, { space: "hsl" });
             const missingCss = core.formatCssMissing(absent);
+            const relative = core.parseCssMissing(
+              "rgb(from red calc(r - 127.5) g b / calc(alpha - 0.25))");
+            const computedByBrowser = document.createElement("div");
+            computedByBrowser.style.color = "rgb(from red calc(r - 127.5) g b / calc(alpha - 0.25))";
+            document.body.append(computedByBrowser);
+            const browserColor = getComputedStyle(computedByBrowser).color;
+            computedByBrowser.remove();
             const generated = core.anchoredPalette([red, blue, red], {
               count: 5, space: "srgb", gamut: "clip",
             });
@@ -95,6 +102,9 @@ try {
               missingMix: missingMix.channels,
               missingAlpha: missingMix.alpha,
               missingCss,
+              relative: relative.channels,
+              relativeAlpha: relative.alpha,
+              browserColor,
               paletteLength: generated.length,
               paletteCenter: generated[2].color.channels,
               customLength: custom.length,
@@ -114,6 +124,9 @@ try {
           assert.ok(result.missingCss.includes("none"));
           assert.ok(Math.abs(result.missingMix[0] - 120) < 1e-8);
           assert.ok(Math.abs(result.missingAlpha - 0.8) < 1e-8);
+          assert.ok(Math.abs(result.relative[0] - .5) < 1e-8);
+          assert.ok(Math.abs(result.relativeAlpha - .75) < 1e-8);
+          assert.ok(result.browserColor.includes("127.5") || result.browserColor.includes("0.5"));
           assert.equal(result.paletteLength, 5);
           assert.deepEqual(result.paletteCenter, [0, 0, 1]);
           assert.equal(result.customLength, 3);
