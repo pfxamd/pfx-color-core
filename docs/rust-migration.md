@@ -19,6 +19,9 @@ GitHub CI tools are build infrastructure, not runtime dependencies.
 - `contrast/`: WCAG opaque sRGB luminance and contrast ratio, with explicit refusal of unspecified compositing.
 - `interpolation/`: alpha-premultiplied interpolation in color-space coordinates with explicit hue paths.
 - `gamut/`: bounded RGB checks, clipping and a documented Oklch radial chroma strategy.
+- `palettes/`: deterministic tonal palettes, ramps and anchored ramps, count bounded to 256.
+- `harmony/`: Oklch geometric hue-offset schemes with configurable angles.
+- `gradients/`: normalized unit-square geometry, stable hard-stop ordering, color-space/alpha-aware sampling.
 
 No React, JavaScript packages, browser APIs, host filesystem, display pipeline
 or profile-management logic belongs in the computational core.
@@ -50,7 +53,7 @@ JavaScript glue, and C ABI are **not yet implemented**.
 
 1. Reference-tested mathematical base and color-space conversions (implemented).
 2. Gamut checking/mapping, interpolation, perceptual difference and WCAG contrast (implemented as separate modules).
-3. Palette, harmony and gradient generators.
+3. Palette, harmony and gradient generators (implemented and verified by new boundary/behavior tests).
 4. C ABI and WASM bindings and cross-platform integration suites.
 5. Replace the TypeScript engine only after verifying behavioral equivalence.
 
@@ -60,6 +63,14 @@ JavaScript glue, and C ABI are **not yet implemented**.
 - WCAG 2.2 luminance/contrast is defined for opaque, sRGB-in-gamut colors. Callers must explicitly composite transparent colors and map wide-gamut colors before invoking this API.
 - The current numeric-only Color representation cannot preserve CSS missing component / `none` semantics during interpolation.
 - Tests use published numeric fixtures and boundary cases; this is not yet a full browser compatibility or visual perception validation suite.
+
+## Milestone 3 contracts
+
+- Palettes are deterministic; no hidden random sampling or global state. They return typed colors and a mapping indicator.
+- Harmony is geometric hue rotation, not an assertion of perceptual quality or accessible contrast.
+- Gradient duplicate stop positions are stable; at an exact duplicate coordinate, the last supplied stop wins.
+- Gradient geometry is defined for a normalized unit square; CSS rendering and serialization will be implemented in separate platform bindings.
+- Existing TypeScript tools and the deployed UI are not replaced during the Rust migration.
 
 ## Releasing
 

@@ -1,49 +1,69 @@
 # PFx Color Core / Rust
 
-A portable color science implementation in Rust with **zero external Cargo dependencies**. It is developed alongside the existing TypeScript v0.1.0 baseline; the deployed PFx Colors UI is unchanged.
+A portable, first-party color science implementation in Rust with **zero external Cargo dependencies**. The Rust implementation is developed alongside the TypeScript v0.1.0 baseline; the deployed PFx Colors UI remains unchanged.
 
-## Supported
+## Implemented
 
 - Encoded and linear sRGB, Display P3, CSS Rec.2020
-- CIE XYZ D65/D50 (Bradford adaptation), Lab/LCH and Oklab/OKLCH
-- `f64` precision, explicit validated alpha, unbounded color-space conversions
-- Color differences: CIE76, CIEDE2000, Delta-E OK
-- WCAG 2.2 luminance and contrast ratio, for opaque in-gamut sRGB colors
-- Premultiplied-alpha interpolation in configurable color spaces with four hue paths
-- Explicit gamut checks, RGB clipping and Oklch chroma-reduction mapping
-- Build checks on native Rust and the `wasm32-unknown-unknown` target
+- CIE XYZ D65/D50 (Bradford adaptation), Lab/LCH, Oklab/OKLCH
+- Unclipped f64 conversions with finite numeric coordinates and explicit alpha
+- CIE76, CIEDE2000, Delta-E OK
+- WCAG 2.2 luminance and ratio for opaque, sRGB-in-gamut colors
+- Premultiplied-alpha interpolation, with four polar hue paths
+- Explicit gamut checks, clipping and Oklch chroma reduction
+- **Palettes:** tonal scales, two-anchor ramps and multiple-anchor ramps
+- **Harmonies:** analogous, complementary, split-complementary, triadic, tetradic, square, custom hue offsets
+- **Gradients:** ordered and duplicate-position hard stops, color-space interpolation, linear/radial/conic sampling in a normalized unit square
+- Native Rust and wasm32-unknown-unknown compilation checks
 
-## API examples
+## API example
 
 ```rust
 use pfx_color_core::{
-    Color, ColorSpace, DifferenceMethod, difference, contrast_ratio,
-    GamutMap, map_to_gamut, HueMethod, interpolate
+    Color, ColorSpace, TonalOptions, tonal_palette,
+    RampOptions, ramp_palette,
+    HarmonyScheme, HarmonyOptions, generate_harmony,
+    Gradient, GradientStop, GradientOptions
 };
 
-let red = Color::new(ColorSpace::Srgb, [1.0, 0.0, 0.0], 1.0)?;
-let white = Color::new(ColorSpace::Srgb, [1.0, 1.0, 1.0], 1.0)?;
-let ratio = contrast_ratio(red, white)?;
-let distance = difference(red, white, DifferenceMethod::Ciede2000)?;
-let midpoint = interpolate(red, white, 0.5, ColorSpace::Oklab, HueMethod::Shorter)?;
-let mapped = map_to_gamut(midpoint, ColorSpace::Srgb, GamutMap::OklchChroma)?;
-# Ok::<(), pfx_color_core::ColorError>(())
+fn main() -> Result<(), pfx_color_core::ColorError> {
+    let red = Color::new(ColorSpace::Srgb, [1.0, 0.0, 0.0], 1.0)?;
+    let blue = Color::new(ColorSpace::Srgb, [0.0, 0.0, 1.0], 1.0)?;
+    let tonal = tonal_palette(red, TonalOptions::default())?;
+    let ramp = ramp_palette(red, blue, RampOptions::default())?;
+    let harmony = generate_harmony(red, HarmonyScheme::Triadic, HarmonyOptions::default())?;
+    let gradient = Gradient::new(
+        &[
+            GradientStop { position: 0.0, color: red },
+            GradientStop { position: 1.0, color: blue }
+        ],
+        GradientOptions::default()
+    )?;
+    let midpoint = gradient.sample(0.5)?;
+    println!("{} {} {} {:?}", tonal.colors.len(), ramp.colors.len(), harmony.colors.len(), midpoint.color);
+    Ok(())
+}
 ```
 
-## Explicit limitations
+## Design and safety boundaries
 
-- Color input is numeric only; CSS parsing, missing components (`none`) and CSS color-mix() semantics are **not** fully implemented.
-- WCAG contrast rejects transparent or out-of-sRGB-gamut inputs; the caller must explicitly composite/map first. APCA is not implemented.
-- The Oklch chroma-reduction method is **not** the W3C Local-MINDE algorithm. Mapping changes color values; conversion never does.
-- Image color analysis, palette/harmony/gradient tools and color profiles are not yet part of the Rust API.
-- Building to a WASM target **does not** provide a JavaScript binding. Browser and C ABI bindings remain to be implemented.
+- Palette and harmony generation is **deterministic**. Harmony schemes are angle conventions, not scientifically guaranteed aesthetically pleasing or accessible combinations.
+- Explicit RGB target-space gamut mapping; no conversion implicitly clips color channels.
+- Only numeric colors are supported. CSS parsing, missing channels (`none`) and complete CSS color-mix semantics are not yet implemented.
+- WCAG contrast refuses partially transparent or out-of-sRGB-gamut values; callers must explicitly handle backgrounds and gamut mapping.
+- Gradient spatial sampling has *documented unit-square geometry*, not pixel-perfect CSS box geometry. CSS serializing/rendering belongs in web bindings.
+- The Oklch chroma mapper is **not** the CSS Local-MINDE algorithm.
+- Image extraction, ICC profile support, browser JS glue, C ABI and application bindings are not yet implemented. Compiling a wasm32 target alone does not create a browser library.
+- Rust `v0.1.0` is a development crate version, not a released Rust API; existing GitHub tag `v0.1.0` refers to the original TypeScript release.
 
-## Validate
+## Verify
 
-`cargo fmt --all -- --check`
-`cargo test --workspace --all-targets`
-`cargo clippy --workspace --all-targets -- -D warnings`
+```sh
+cargo fmt --all -- --check
+cargo test --workspace --all-targets
+cargo clippy --workspace --all-targets -- -D warnings
+cargo build --workspace --release
+cargo build --workspace --target wasm32-unknown-unknown --release
+```
 
-References: [W3C CSS Color 4](https://www.w3.org/TR/css-color-4/),
-[WCAG 2.2](https://www.w3.org/TR/WCAG22/),
-[Sharma et al. CIEDE2000 fixtures](https://hajim.rochester.edu/ece/sites/gsharma/ciede2000/).
+Sources: [W3C CSS Color 4](https://www.w3.org/TR/css-color-4/), [WCAG 2.2](https://www.w3.org/TR/WCAG22/) and [Sharma et al. CIEDE2000 data](https://hajim.rochester.edu/ece/sites/gsharma/ciede2000/).

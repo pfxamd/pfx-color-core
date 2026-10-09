@@ -32,6 +32,11 @@ pub enum ColorError {
     RequiresOpaque,
     OutOfGamut,
     InvalidFraction,
+    InvalidCount,
+    InvalidRange,
+    InvalidAngle,
+    InvalidScheme,
+    InvalidPosition,
 }
 
 impl fmt::Display for ColorError {
@@ -45,6 +50,11 @@ impl fmt::Display for ColorError {
             Self::InvalidFraction => {
                 f.write_str("interpolation fraction must be finite and between 0 and 1")
             }
+            Self::InvalidCount => f.write_str("count must be between 2 and 256, and at least the number of anchors"),
+            Self::InvalidRange => f.write_str("palette lightness or chroma settings are out of range"),
+            Self::InvalidAngle => f.write_str("angle must be finite and inside the supported design range"),
+            Self::InvalidScheme => f.write_str("custom harmonies require an explicit offsets array"),
+            Self::InvalidPosition => f.write_str("gradient positions and normalized coordinates must be between 0 and 1"),
         }
     }
 }
