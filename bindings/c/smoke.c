@@ -89,6 +89,16 @@ int main(void) {
     CHECK(fabs(out.channels[0] - 1.0) < 1e-12);
     pfx_gradient_free(gradient);
 
+    PfxStudy *study = pfx_study_new(&green, 321, 58.0, 58.0, 58.0, 58.0,
+                                  PFX_SRGB, PFX_GAMUT_CSS);
+    CHECK(study != NULL);
+    CHECK(pfx_study_len(study) == 10);
+    CHECK(pfx_study_scheme(study) < 6);
+    CHECK(pfx_study_get(study, 9, &out) == 0);
+    CHECK(out.space == PFX_SRGB);
+    CHECK(isfinite(pfx_study_oklch(study, 4, 0)));
+    pfx_study_free(study);
+
     CHECK(pfx_color_convert(NULL, PFX_SRGB, &out) == -1);
     CHECK(pfx_color_set(&out, 888, 0.0, 0.0, 0.0, 1.0) == -2);
     CHECK(isnan(pfx_color_difference(NULL, &white, PFX_DELTA_E_OK)));

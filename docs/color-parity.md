@@ -36,7 +36,7 @@ in both implementations. Passing the gate does **not** imply parity elsewhere. W
 | CSS missing/none channel semantics, hue raw path | Missing | Keep TypeScript |
 | Full CSS-compatible gradient serialization/geometry | Missing: Rust normalized unit square | Keep TypeScript |
 | Arbitrary anchor palettes/custom harmony in WASM ABI | Rust core only; binding missing | Keep TypeScript |
-| Randomized 10-color Color Study (custom algorithm + PRNG) | Not implemented in Rust | Keep TypeScript |
+| Seeded 10-color Color Study | Ported to Rust with first-party deterministic PRNG; numerical parity to be validated separately | Keep TypeScript app until integration parity passes |
 | Color-picker selection, channel editing and normalized hex | Not implemented end-to-end | Keep TypeScript |
 | Workspace mutations and undo/redo | Not ported | Keep TypeScript |
 | Optional image extraction | Not ported to Rust | Keep existing image adapter |

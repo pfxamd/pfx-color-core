@@ -91,6 +91,7 @@ _Static_assert(offsetof(PfxColor, channels) == 8, "PFx v1 color ABI offsets chan
 
 typedef struct PfxPalette PfxPalette;
 typedef struct PfxGradient PfxGradient;
+typedef struct PfxStudy PfxStudy;
 
 uint32_t pfx_abi_version(void);
 /* Byte buffers are owned by Rust; return with the EXACT original length. */
@@ -160,6 +161,20 @@ int32_t pfx_gradient_sample_xy(
     const PfxGradient *gradient, double x, double y, PfxColor *out
 );
 void pfx_gradient_free(PfxGradient *gradient);
+
+
+/* Deterministic Color Study with exactly 10 swatches and seedable RNG. */
+PfxStudy *pfx_study_new(
+    const PfxColor *seed, uint32_t rnd_seed,
+    double lightness, double chroma, double hue_range, double tone_range,
+    uint32_t target_space, uint32_t gamut_method
+);
+uint32_t pfx_study_len(const PfxStudy *study);
+uint32_t pfx_study_scheme(const PfxStudy *study);
+int32_t pfx_study_get(const PfxStudy *study, uint32_t index, PfxColor *out);
+int32_t pfx_study_mapped(const PfxStudy *study, uint32_t index);
+double pfx_study_oklch(const PfxStudy *study, uint32_t index, uint32_t coordinate);
+void pfx_study_free(PfxStudy *study);
 
 #ifdef __cplusplus
 }

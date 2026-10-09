@@ -112,3 +112,14 @@ numerical color operations occur in Rust. Example:
 
 Full parser compatibility, CSS missing-component modeling, source-accurate
 serialization of unsupported forms, and UI integration remain migration gates.
+
+
+## Seeded Color Study
+
+The first-party Rust engine contains the PFx Color Study ten-swatch generator.
+Unlike the previous browser feature, its API accepts a **deterministic u32
+random seed**; the wrapper exposes this as colorStudy(seedColor, options), with
+lightness, chroma, hueRange, toneRange, target, gamut and randomSeed options.
+It returns {scheme, colors}; each color contains {index, color, mapped, oklch}.
+No external random-number or palette dependencies are used. The existing
+browser Color Study is not changed or replaced by these bindings yet.

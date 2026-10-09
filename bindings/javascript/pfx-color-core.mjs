@@ -204,6 +204,43 @@ export async function createPfxColorCore(wasm) {
         status(e.pfx_color_interpolate(pa, pb, finite(fraction, "fraction"),
           mix.space, mix.hue, out), "interpolation")));
     },
+    colorStudy(seed, options = {}) {
+      const target = code(ColorSpaces, options.target ?? "srgb", "target space");
+      const mapping = code(GamutMethods, options.gamut ?? "css", "gamut method");
+      const randomSeed = options.randomSeed ?? 0;
+      if (!Number.isInteger(randomSeed) || randomSeed < 0 || randomSeed > 0xffffffff) {
+        throw new RangeError("randomSeed must be an unsigned 32-bit integer");
+      }
+      return colorWith(seed, (ptr) => {
+        const study = e.pfx_study_new(
+          ptr, randomSeed,
+          finite(options.lightness ?? 58, "lightness"),
+          finite(options.chroma ?? 58, "chroma"),
+          finite(options.hueRange ?? 58, "hueRange"),
+          finite(options.toneRange ?? 58, "toneRange"),
+          target, mapping,
+        );
+        if (!study) throw new Error("PFx Color Study could not be created");
+        try {
+          const schemeId = e.pfx_study_scheme(study);
+          const scheme = Object.entries(HarmonySchemes).find(([, id]) => id === schemeId)?.[0];
+          if (!scheme) throw new Error("Invalid returned study scheme");
+          const colors = Array.from({ length: e.pfx_study_len(study) }, (_, index) => {
+            const color = outputWith((out) => status(e.pfx_study_get(study, index, out), "study color"));
+            return {
+              index,
+              color,
+              mapped: e.pfx_study_mapped(study, index) === 1,
+              oklch: [0, 1, 2].map((channel) =>
+                scalar(e.pfx_study_oklch(study, index, channel), "study Oklch")),
+            };
+          });
+          return { scheme, colors };
+        } finally {
+          e.pfx_study_free(study);
+        }
+      });
+    },
     tonalPalette(seed, options = {}) {
       const { target, mapping } = paletteDefaults(options);
       return colorWith(seed, (ptr) => paletteCollect(e.pfx_palette_tonal_new(
