@@ -64,6 +64,8 @@ fn space(code: u32) -> Result<ColorSpace, i32> {
         12 => Ok(ColorSpace::Hsl),
         13 => Ok(ColorSpace::Hwb),
         14 => Ok(ColorSpace::Hsv),
+        15 => Ok(ColorSpace::A98Rgb),
+        16 => Ok(ColorSpace::ProPhotoRgb),
         _ => Err(ENUM),
     }
 }
@@ -132,6 +134,8 @@ fn to_wire(color: Color) -> PfxColor {
         ColorSpace::Hsl => 12,
         ColorSpace::Hwb => 13,
         ColorSpace::Hsv => 14,
+        ColorSpace::A98Rgb => 15,
+        ColorSpace::ProPhotoRgb => 16,
     };
     PfxColor {
         space,
@@ -1043,7 +1047,7 @@ mod tests {
 
     #[test]
     fn all_color_space_codes_are_reversible() {
-        for code in 0..15 {
+        for code in 0..17 {
             let kind = space(code).unwrap();
             let c = Color::new(kind, [0.5, 0.25, 0.8], 0.5).unwrap();
             assert_eq!(to_wire(c).space, code);
