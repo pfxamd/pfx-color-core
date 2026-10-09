@@ -153,6 +153,34 @@ int main(void) {
     CHECK(pfx_image_new(NULL, sizeof(rgba), 2, 2, 2, 1, 100, 128, 0,
                         0, 0, 0, 0) == NULL);
 
+
+    /* Separate 48-byte CSS missing channel wire interface; v1 numeric ABI stays unchanged. */
+    CHECK(pfx_css_missing_color_size() == 48);
+    PfxCssColor *css_a = pfx_css_missing_color_new();
+    PfxCssColor *css_b = pfx_css_missing_color_new();
+    PfxCssColor *css_out = pfx_css_missing_color_new();
+    CHECK(css_a != NULL && css_b != NULL && css_out != NULL);
+    const char source_none[] = "oklch(none 0.2 none / none)";
+    const char source_color[] = "oklch(0.6 0.3 250 / 0.4)";
+    CHECK(pfx_css_missing_color_parse((const uint8_t*)source_none,
+          sizeof(source_none) - 1, css_a) == 0);
+    CHECK(pfx_css_missing_color_get_mask(css_a) == 13);
+    CHECK(pfx_css_missing_color_parse((const uint8_t*)source_color,
+          sizeof(source_color) - 1, css_b) == 0);
+    CHECK(pfx_css_missing_color_interpolate(css_a, css_b, 0.5,
+          PFX_OKLCH, PFX_HUE_SHORTER, css_out) == 0);
+    CHECK(pfx_css_missing_color_get_mask(css_out) == 0);
+    CHECK(fabs(pfx_css_missing_color_get_channel(css_out, 2) - 250) < 1e-8);
+    char missingbuf[256] = {0};
+    CHECK(pfx_css_missing_color_format(css_a, (uint8_t*)missingbuf,
+          sizeof(missingbuf)) > 0);
+    CHECK(pfx_css_missing_color_convert(css_a, PFX_SRGB, css_out) == 0);
+    CHECK(pfx_css_missing_color_get_mask(css_out) == 0);
+    CHECK(pfx_css_missing_color_set(css_out, PFX_SRGB, 1, 2, 3, 1, 16) < 0);
+    pfx_css_missing_color_free(css_a);
+    pfx_css_missing_color_free(css_b);
+    pfx_css_missing_color_free(css_out);
+
     CHECK(pfx_color_convert(NULL, PFX_SRGB, &out) == -1);
     CHECK(pfx_color_set(&out, 888, 0.0, 0.0, 0.0, 1.0) == -2);
     CHECK(isnan(pfx_color_difference(NULL, &white, PFX_DELTA_E_OK)));
