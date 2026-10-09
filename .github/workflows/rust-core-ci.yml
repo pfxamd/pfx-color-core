@@ -38,4 +38,4 @@ jobs:
       - name: Compile for WebAssembly
         run: cargo build --workspace --target wasm32-unknown-unknown --release
       - name: Test real WebAssembly from JavaScript (Node.js)
-        run: node --test bindings/javascript/pfx-color-core.test.mjs
+        run: node --test bindings/javascript/pfx-color-core.smoke.mjs
