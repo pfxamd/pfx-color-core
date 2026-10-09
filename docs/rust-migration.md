@@ -1,79 +1,74 @@
-# Rust engine migration and scientific contract
+# PFx Color Core — migration state
 
-The TypeScript color engine and deployed PFx Colors UI remain unchanged.
-Rust starts as a separate first-party computation implementation under
-`crates/color-core/` within this repository.
+The original `v0.1.0` TypeScript package and published PFx Colors website remain
+unchanged. Rust is maintained as an independent, first-party implementation in
+the same repository. **No third-party Cargo dependencies** are permitted in
+the engine or C/WASM bindings. Native and browser code uses the exact same
+Rust computational functions, with no reimplementation of color math in JS.
 
-## No external libraries
+## Repository structure
 
-The Rust crate has no Cargo dependencies or dev-dependencies.
-Its standard library (`std`) is part of the Rust language toolchain.
-GitHub CI tools are build infrastructure, not runtime dependencies.
+- `crates/color-core/src/math`, `spaces`, `conversion`: f64 matrix math,
+  transfer curves, XYZ D65/D50, CIE Lab/LCH and OKLab/OKLCH
+- `crates/color-core/src/css`, `cylindrical`: absolute CSS color parsing,
+  named colors, HEX/CSS output, HSL/HWB/HSV
+- `difference`, `contrast`, `interpolation`, `gamut`: CIE76/CIEDE2000/
+  Delta-E OK, opaque sRGB WCAG contrast, premultiplied alpha interpolation and
+  explicit gamut mapping (clip, Oklch chroma, CSS Local MINDE)
+- `palettes`, `harmony`, `gradients`, `study`: deterministic color design
+  algorithms, including the seedable 10-color PFx Colors Study
+- `crates/color-ffi`: versioned native C ABI and WebAssembly exports
+- `bindings/c`: stable C headers and linked C smoke test
+- `bindings/javascript/pfx-color-core.mjs`: zero-runtime-package WASM loader
+- `bindings/javascript/pfx-color-tools.mjs`: opt-in picker and Color Study
+- `bindings/javascript/pfx-color-workspace.mjs`: opt-in tool state, palette,
+  harmony, gradient orchestration and undo/redo; not included in production
+- `scripts/browser-wasm-smoke.mjs`: independent Chromium/Firefox validation
 
-## Core boundaries
+## Engineering contracts
 
-- `math/`: numeric primitives, linear matrices, signed transfer functions, white points.
-- `spaces/`: explicit space identifiers, validated color coordinates and alpha.
-- `conversion/`: D65 XYZ routing, D50 Bradford adaptation, CIE Lab/LCH and Oklab/OKLCH transforms.
-- `difference/`: CIE76, CIEDE2000 and Delta-E OK.
-- `contrast/`: WCAG opaque sRGB luminance and contrast ratio, with explicit refusal of unspecified compositing.
-- `interpolation/`: alpha-premultiplied interpolation in color-space coordinates with explicit hue paths.
-- `gamut/`: bounded RGB checks, clipping and a documented Oklch radial chroma strategy.
-- `palettes/`: deterministic tonal palettes, ramps and anchored ramps, count bounded to 256.
-- `harmony/`: Oklch geometric hue-offset schemes with configurable angles.
-- `gradients/`: normalized unit-square geometry, stable hard-stop ordering, color-space/alpha-aware sampling.
+1. Full internal numeric precision is f64, with no RGB byte quantization
+   until a user explicitly requests HEX output.
+2. Conversion does not silently clip. Mapping is a caller's explicit choice.
+3. Color space IDs are versioned across the FFI (do not export Rust enum ABI).
+4. Invalid and non-finite input is rejected, not silently coerced.
+5. Alpha stays intact during conversion; interpolation uses premultiplied
+   alpha with explicit hue-path semantics.
+6. The independent engine contains no React, browser, DOM or external
+   third-party computation code.
+7. Opaque C handles have explicit ownership and release functions.
+8. Existing TypeScript and released website remain unchanged until the
+   corresponding browser/UI regression gates have passed.
 
-No React, JavaScript packages, browser APIs, host filesystem, display pipeline
-or profile-management logic belongs in the computational core.
+## Active validation
 
-## Defined behavior
+```sh
+cargo fmt --all -- --check
+cargo test --workspace --all-targets
+cargo clippy --workspace --all-targets -- -D warnings
+cargo build --workspace --release
+cargo build --workspace --target wasm32-unknown-unknown --release
+node --test bindings/javascript/pfx-color-core.smoke.mjs
+```
 
-1. Calculations use `f64` and **never** round to 8-bit RGB.
-2. Out-of-gamut numeric channels are preserved; rendering and mapping are separate concerns.
-3. Alpha stays unchanged across coordinate conversion.
-4. Non-finite input and results are rejected.
-5. The current numeric API does **not** parse CSS values. CSS missing values (`none`) must
-   eventually use an explicit representation. They cannot be treated as numeric zero by a parser.
-6. For mathematical polar conversion, zero-chroma hue is stored as 0 degrees by documented
-   convention; it is not claimed to be the CSS `none` value.
-7. CSS Rec.2020 uses the BT.1886 2.4 transfer function defined by CSS Color 4.
-   It is **not** interchangeable with the broadcast camera OETF.
+GitHub Actions additionally runs C-ABI smoke, real Rust WASM-versus-TypeScript
+comparison, opt-in picker/workspace tests, and independent headless
+Chromium/Firefox checks at desktop and mobile viewport sizes. Browser runners
+are CI-only test infrastructure, not runtime dependencies.
 
-## Standards and validation
+## Remaining migration blockers
 
-- [W3C CSS Color 4, 2026-09-01](https://www.w3.org/TR/2026/CRD-css-color-4-20260901/)
-- [Original PFx TypeScript regression fixtures](../tests/engine/color-engine.test.ts)
-- [Björn Ottosson — Oklab](https://bottosson.github.io/posts/oklab/)
+- CSS missing channel (`none`), relative-color syntax, `calc()`/`var()`
+  and other unsupported CSS Color 4 grammar
+- Additional spaces and algorithms: A98, ProPhoto, Lab D65, OKHSL/OKHSV,
+  APCA, Delta-E ITP/Jz/HCT
+- External ICC profiles and image palette extraction
+- Complete CSS gradient pixel geometry and browser rendering semantics
+- Actual React UI migration and user-interaction regression verification
 
-Validate with `cargo test --workspace --all-targets`.
-The CI separately compiles `wasm32-unknown-unknown`; a production WASM binding,
-JavaScript glue, and C ABI are **not yet implemented**.
+See [color parity matrix](color-parity.md),
+[bindings and independent build instructions](portable-bindings.md),
+[W3C CSS Color 4](https://www.w3.org/TR/css-color-4/) and
+[WCAG 2.2](https://www.w3.org/TR/WCAG22/).
 
-## Migration stages
-
-1. Reference-tested mathematical base and color-space conversions (implemented).
-2. Gamut checking/mapping, interpolation, perceptual difference and WCAG contrast (implemented as separate modules).
-3. Palette, harmony and gradient generators (implemented and verified by new boundary/behavior tests).
-4. C ABI and WASM bindings and cross-platform integration suites.
-5. Replace the TypeScript engine only after verifying behavioral equivalence.
-
-## Limitations of milestone 2
-
-- Gamut mapping provides explicit clipping and a constant-Oklch-lightness/hue chroma search; the latter does not implement the W3C Local-MINDE algorithm.
-- WCAG 2.2 luminance/contrast is defined for opaque, sRGB-in-gamut colors. Callers must explicitly composite transparent colors and map wide-gamut colors before invoking this API.
-- The current numeric-only Color representation cannot preserve CSS missing component / `none` semantics during interpolation.
-- Tests use published numeric fixtures and boundary cases; this is not yet a full browser compatibility or visual perception validation suite.
-
-## Milestone 3 contracts
-
-- Palettes are deterministic; no hidden random sampling or global state. They return typed colors and a mapping indicator.
-- Harmony is geometric hue rotation, not an assertion of perceptual quality or accessible contrast.
-- Gradient duplicate stop positions are stable; at an exact duplicate coordinate, the last supplied stop wins.
-- Gradient geometry is defined for a normalized unit square; CSS rendering and serialization will be implemented in separate platform bindings.
-- Existing TypeScript tools and the deployed UI are not replaced during the Rust migration.
-
-## Releasing
-
-The current GitHub tag `v0.1.0` refers to the existing TypeScript package, **not**
-the new Rust crate. Rust versioning and its first tagged release should only be
-assigned after its own validation gates pass.
+The published `v0.1.0` tag refers to TypeScript, **not** a Rust release.
