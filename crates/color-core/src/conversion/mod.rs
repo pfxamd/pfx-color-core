@@ -7,6 +7,7 @@
 //! The pipeline routes through XYZ D65, adapting to/from D50 only as needed.
 //! RGB channels are not clipped; all intermediate calculations are f64.
 
+use crate::cylindrical::{hsl_to_srgb, hwb_to_srgb, hsv_to_srgb, srgb_to_hsl, srgb_to_hwb, srgb_to_hsv};
 use crate::math::{decode_rec2020, decode_srgb, encode_rec2020, encode_srgb, Matrix3, D50};
 use crate::spaces::{Color, ColorError, ColorSpace};
 
@@ -239,6 +240,9 @@ fn to_xyz_d65(space: ColorSpace, c: [f64; 3]) -> [f64; 3] {
         ColorSpace::Lch => D50_TO_D65.transform(lab_to_xyz_d50(from_polar(c))),
         ColorSpace::Oklab => oklab_to_xyz_d65(c),
         ColorSpace::Oklch => oklab_to_xyz_d65(from_polar(c)),
+        ColorSpace::Hsl => SRGB_TO_XYZ.transform(map3(hsl_to_srgb(c), decode_srgb)),
+        ColorSpace::Hwb => SRGB_TO_XYZ.transform(map3(hwb_to_srgb(c), decode_srgb)),
+        ColorSpace::Hsv => SRGB_TO_XYZ.transform(map3(hsv_to_srgb(c), decode_srgb)),
     }
 }
 
@@ -256,6 +260,9 @@ fn from_xyz_d65(target: ColorSpace, xyz: [f64; 3]) -> [f64; 3] {
         ColorSpace::Lch => to_polar(xyz_d50_to_lab(D65_TO_D50.transform(xyz))),
         ColorSpace::Oklab => xyz_d65_to_oklab(xyz),
         ColorSpace::Oklch => to_polar(xyz_d65_to_oklab(xyz)),
+        ColorSpace::Hsl => srgb_to_hsl(map3(XYZ_TO_SRGB.transform(xyz), encode_srgb)),
+        ColorSpace::Hwb => srgb_to_hwb(map3(XYZ_TO_SRGB.transform(xyz), encode_srgb)),
+        ColorSpace::Hsv => srgb_to_hsv(map3(XYZ_TO_SRGB.transform(xyz), encode_srgb)),
     }
 }
 

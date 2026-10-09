@@ -22,6 +22,9 @@ pub enum ColorSpace {
     Lch,
     Oklab,
     Oklch,
+    Hsl,
+    Hwb,
+    Hsv,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -37,6 +40,8 @@ pub enum ColorError {
     InvalidAngle,
     InvalidScheme,
     InvalidPosition,
+    InvalidSyntax,
+    UnsupportedSyntax,
 }
 
 impl fmt::Display for ColorError {
@@ -65,6 +70,8 @@ impl fmt::Display for ColorError {
             Self::InvalidPosition => {
                 f.write_str("gradient positions and normalized coordinates must be between 0 and 1")
             }
+            Self::InvalidSyntax => f.write_str("invalid CSS color syntax"),
+            Self::UnsupportedSyntax => f.write_str("unsupported CSS color syntax"),
         }
     }
 }
