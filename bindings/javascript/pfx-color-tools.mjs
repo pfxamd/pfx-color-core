@@ -7,6 +7,15 @@ const SPACES = Object.freeze(["srgb", "p3", "hsl", "oklab", "oklch"]);
 const toCore = space => space === "p3" ? "display-p3" : space;
 const toLegacy = space => space === "display-p3" ? "p3" : space;
 
+// The legacy UI retains 4-digit #RGBA when each byte is compressible.
+function legacyHex(value) {
+  if (/^#([0-9a-f]{2}){4}$/.test(value)
+      && [1, 3, 5, 7].every(i => value[i] === value[i + 1])) {
+    return "#" + value[1] + value[3] + value[5] + value[7];
+  }
+  return value;
+}
+
 export function createPfxColorTools(core) {
   if (!core || ["parseCss", "convert", "formatCss", "formatHex", "isInGamut",
     "mapGamut"].some(key => typeof core[key] !== "function")) {
@@ -32,11 +41,11 @@ export function createPfxColorTools(core) {
       coordinates: [...raw.channels],
       alpha: raw.alpha,
       css: core.formatCss(raw),
-      hex: core.formatHex(raw, "css"),
+      hex: legacyHex(core.formatHex(raw, "css")),
     };
   }
   function formatHex(input) {
-    return core.formatHex(normalize(input), "css");
+    return legacyHex(core.formatHex(normalize(input), "css"));
   }
   function selectColor(input, spaces = SPACES) {
     if (!Array.isArray(spaces)) throw new TypeError("spaces must be an array");
