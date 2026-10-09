@@ -1,6 +1,6 @@
 # PFx Colors — verified compatibility and migration gate
 
-**Audited:** 2026-10-09 against [Rust engine commit `7b382b115de33a43845a5dea9409a57e68d2210f`](https://github.com/pfxamd/pfx-color-core/commit/7b382b115de33a43845a5dea9409a57e68d2210f).
+**Audited baseline:** 2026-10-09 against [Rust engine commit `7b382b115de33a43845a5dea9409a57e68d2210f`](https://github.com/pfxamd/pfx-color-core/commit/7b382b115de33a43845a5dea9409a57e68d2210f).
 **Status:** experimental independent Rust engine; **PFx Colors production UI still uses its pinned TypeScript engine**. The Rust API, C ABI, WASM bridge and optional JS tools are not a released drop-in replacement.
 
 This is a code-and-test audit, **not** a claim of full CSS Color 4 conformance or feature parity. Reference implementation: `src/engine/`, `src/tools/`, `src/workspace/`. Rust: `crates/color-core/`; C/WASM: `crates/color-ffi/`; JS bindings: `bindings/javascript/`.
@@ -13,11 +13,12 @@ This is a code-and-test audit, **not** a claim of full CSS Color 4 conformance o
 | Perceptual differences | CIE76, CIEDE2000 and Delta-E OK | `difference/mod.rs` and test fixtures; ITP/Jz/HCT are not implemented. |
 | WCAG contrast | WCAG 2.2 relative luminance/contrast for **opaque, in-sRGB-gamut** colors | `contrast/mod.rs`; bounded comparison with TypeScript. Not numerically identical at every threshold: do not silently replace production pass/fail behavior. |
 | APCA contrast | **Not included in the independent Rust core** | APCA-specific code was removed from Rust on licensing review. The legacy TypeScript adapter remains responsible for APCA. |
-| Alpha-aware interpolation | Rectangular and polar interpolation; shorter/longer/increasing/decreasing/**raw** hue paths; HSL/HWB/HSV hue index handling, powerless-hue behavior and premultiplied non-hue channels | `interpolation/mod.rs`, `tests/hue-paths.rs`, Rust-versus-real-Color.js HSL/OKLCH raw-hue parity tests. **Raw hue is implemented**, but missing CSS components have no representation yet. |
+| Alpha-aware interpolation | Rectangular and polar interpolation; shorter/longer/increasing/decreasing/**raw** hue paths; HSL/HWB/HSV hue index handling, powerless-hue behavior and premultiplied non-hue channels | `interpolation/mod.rs`, `tests/hue-paths.rs`, Rust-versus-real-Color.js HSL/OKLCH raw-hue parity tests. **Raw hue is implemented**. The opt-in `CssColor` API now carries explicit missing-component masks; the numeric API intentionally does not. |
 | Gamut operations | Membership, clipping, Oklch chroma reduction and CSS Local MINDE | `gamut/mod.rs`; mapping remains explicit; not full browser render parity. |
 | Palettes and design tools | Tonal/ramp/anchored palettes, named/custom harmonies, seeded 10-color Color Study | `palettes/`, `harmony/`, `study/`; native, C, WASM and targeted legacy parity checks. |
 | Gradients | Ordered 2–256 stops, hard-stop behavior, linear/radial/conic models; progress and unit-square XY sampling | `gradients/mod.rs` and WASM interface. **Not pixel-equivalent to CSS gradients for arbitrary box ratios, shapes, positioning or rendering.** |
 | CSS color input | HEX; legacy/modern RGB and HSL; HWB; Lab/LCH/OKLab/OKLCH; supported `color()` absolute spaces; 148 standard named colors plus `transparent` | `css/mod.rs`, `tests/css-compat.rs`, JS/legacy parity smoke tests. CSS `hsv()` is **not** accepted (HSV is a numeric space). Advanced grammar remains unsupported. |
+| CSS missing values (opt-in) | **Implemented for absolute modern color syntax** using separate `CssColor` with channel/alpha mask, Rust parsing/formatting, analogous-component and set carry-forward, premultiplied mixing, ordinary zero-valued numeric conversion, additive 48-byte C ABI and WASM JS methods | `css_missing.rs`, `tests/css-missing.rs`, `css_missing_ffi.rs`, `pfx-color-core.smoke.mjs`, native C and browser smoke. Existing numeric `parse_css` and picker/workspace intentionally still reject `none`. This does **not** implement relative colors, all CSS Color 4 grammar, or a production UI migration. |
 | CSS output | Color strings and explicit-mapped HEX output; opt-in JS workspace serializes basic gradient definitions | `css/mod.rs` and `pfx-color-workspace.mjs`. Gradient-string smoke tests **do not prove browser rendering parity**. |
 | Image palette extraction | **Implemented:** deterministic perceptual palette from caller-decoded, unpremultiplied RGBA8 pixel buffers; up to 32 colors, 64 MiB input and 500,000 samples, alpha/region/white filters | `images/mod.rs`, `tests/images.rs`, native C smoke, Node WASM and real browser ImageData tests. **Not** an encoded PNG/JPEG/WebP decoder, ICC pipeline, or byte/visual-exact ColorThief replacement. |
 | Portable integration | First-party C ABI (v1), real Rust WASM wrapper with no third-party runtime packages; opt-in picker and JS workspace/history | `color-ffi/`, `pfx-color-core.mjs`, `pfx-color-tools.mjs`, `pfx-color-workspace.mjs`. Workspace state/history is handled in JS; color math is Rust. No production React swap. |
@@ -25,7 +26,7 @@ This is a code-and-test audit, **not** a claim of full CSS Color 4 conformance o
 
 ## Confirmed remaining work — ordered migration gates
 
-1. **CSS missing components**: represent `none` explicitly (including powerless/missing hue and alpha as applicable) across parsing, conversion, interpolation, formatting and FFI. The current numeric `Color` cannot preserve missing components. Do not reinterpret `none` as zero.
+1. **CSS missing-component gate — initial opt-in API completed**: dedicated `CssColor` / `parse_css_missing` / `format_css_missing` / `interpolate_css_missing`, additive C and WASM functions. Remaining: broaden CSS syntax, strengthen conformance fixtures (especially automatic powerless channels and cross-space corner cases), and explicitly integrate/verify picker, workspace and gradient semantics. Numeric `Color` still deliberately cannot preserve missing fields.
 2. **Advanced CSS grammar**: relative color syntax, `calc()`, `var()` and remaining unsupported Color 4 expressions require a deliberate parser/value-resolution contract, compatibility fixtures and rejection tests.
 3. **Specialized algorithms and spaces**: OKHSL/OKHSV, Delta-E ITP, Jz-family and HCT are absent. APCA requires an independently resolved licensing/integration decision; it must not be silently copied into Apache-2.0 Rust.
 4. **Gradient semantics**: implement and test true CSS layout geometry (real box dimensions, radial sizing/shape, positioning, repeating behavior where relevant) and browser-rendered visual comparisons. Current unit-square sampling is correct only for its documented model.
@@ -41,7 +42,7 @@ At the audit baseline, these GitHub Actions runs are green:
 - [Rust WASM Browser Compatibility](https://github.com/pfxamd/pfx-color-core/actions/runs/37953015951): real compiled WASM in headless Chromium and Firefox, desktop and mobile **viewports**, including decoded-image palette extraction.
 - [Color Core CI](https://github.com/pfxamd/pfx-color-core/actions/runs/37953015739): legacy TypeScript checks.
 
-These test results apply to `7b382b1`; they do **not** validate a deployed React UI migration, actual mobile devices, untested CSS Color 4 syntax, arbitrary ICC profiles, or native Windows/macOS.
+The original audit's three green workflow runs apply to `7b382b1`; later `none` implementation commits require their own green run results. they do **not** validate a deployed React UI migration, actual mobile devices, untested CSS Color 4 syntax, arbitrary ICC profiles, or native Windows/macOS.
 
 The executable `bindings/javascript/legacy-parity.smoke.mjs` compares real Rust WASM with the repository's actual ColorJs adapter, with documented numeric tolerances. HSL/OKLCH raw hue was explicitly cross-checked with actual Color.js. A bounded WCAG contrast difference is allowed in the test suite: this is **not exact threshold equivalence**.
 
