@@ -79,6 +79,7 @@ fn gamut_method(code: u32) -> Result<GamutMap, i32> {
     match code {
         0 => Ok(GamutMap::Clip),
         1 => Ok(GamutMap::OklchChroma),
+        2 => Ok(GamutMap::Css),
         _ => Err(ENUM),
     }
 }

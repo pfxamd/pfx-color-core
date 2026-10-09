@@ -48,7 +48,8 @@ enum PfxDifferenceMethod {
 
 enum PfxGamutMethod {
     PFX_GAMUT_CLIP = 0,
-    PFX_GAMUT_OKLCH_CHROMA = 1
+    PFX_GAMUT_OKLCH_CHROMA = 1,
+    PFX_GAMUT_CSS = 2
 };
 
 enum PfxHueMethod {
