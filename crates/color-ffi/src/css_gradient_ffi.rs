@@ -258,11 +258,26 @@ impl PreviewLut {
     fn new(gradient: &CssGradient) -> Result<Self, i32> {
         let stops = gradient.stops();
         let positions: Vec<f64> = stops.iter().map(|s| s.position).collect();
-        let first = rgba(gradient.sample_progress(stops[0].position - 1.0).map_err(|_| COLOR)?.color)?;
-        let last = rgba(gradient.sample_progress(stops[stops.len()-1].position).map_err(|_| COLOR)?.color)?;
+        let first = rgba(
+            gradient
+                .sample_progress(stops[0].position - 1.0)
+                .map_err(|_| COLOR)?
+                .color,
+        )?;
+        let last = rgba(
+            gradient
+                .sample_progress(stops[stops.len() - 1].position)
+                .map_err(|_| COLOR)?
+                .color,
+        )?;
         let repeating = gradient.options().repeating;
         let constant = if repeating && positions[0] == positions[positions.len() - 1] {
-            Some(rgba(gradient.sample_progress(positions[0]).map_err(|_| COLOR)?.color)?)
+            Some(rgba(
+                gradient
+                    .sample_progress(positions[0])
+                    .map_err(|_| COLOR)?
+                    .color,
+            )?)
         } else {
             None
         };
@@ -280,35 +295,63 @@ impl PreviewLut {
                 // Never cross the right side of a hard stop at the final
                 // sample: its left limit is the first color at that stop.
                 let sampled = if j == bins {
-                    rgba(gradient.sample_progress(b - (b - a) * 1e-12).map_err(|_| COLOR)?.color)?
+                    rgba(
+                        gradient
+                            .sample_progress(b - (b - a) * 1e-12)
+                            .map_err(|_| COLOR)?
+                            .color,
+                    )?
                 } else {
                     let fraction = j as f64 / bins as f64;
-                    rgba(gradient.sample_progress(a + (b - a) * fraction).map_err(|_| COLOR)?.color)?
+                    rgba(
+                        gradient
+                            .sample_progress(a + (b - a) * fraction)
+                            .map_err(|_| COLOR)?
+                            .color,
+                    )?
                 };
                 samples.push(sampled);
             }
             segments.push(samples);
         }
-        Ok(Self { stops: positions, segments, first, last, constant, repeating })
+        Ok(Self {
+            stops: positions,
+            segments,
+            first,
+            last,
+            constant,
+            repeating,
+        })
     }
 
     fn sample(&self, mut progress: f64) -> Result<[u8; 4], i32> {
-        if !progress.is_finite() { return Err(COLOR); }
-        if let Some(value) = self.constant { return Ok(value); }
+        if !progress.is_finite() {
+            return Err(COLOR);
+        }
+        if let Some(value) = self.constant {
+            return Ok(value);
+        }
         let first = self.stops[0];
         let last = self.stops[self.stops.len() - 1];
         if self.repeating {
             progress = (progress - first).rem_euclid(last - first) + first;
-            if !progress.is_finite() { return Err(COLOR); }
+            if !progress.is_finite() {
+                return Err(COLOR);
+            }
         }
-        if progress < first { return Ok(self.first); }
-        if progress >= last { return Ok(self.last); }
+        if progress < first {
+            return Ok(self.first);
+        }
+        if progress >= last {
+            return Ok(self.last);
+        }
         let right = self.stops.partition_point(|stop| *stop <= progress);
         let index = right - 1;
         let ramp = &self.segments[index];
-        if ramp.is_empty() { return Ok(self.last); }
-        let t = ((progress - self.stops[index])
-            / (self.stops[right] - self.stops[index]))
+        if ramp.is_empty() {
+            return Ok(self.last);
+        }
+        let t = ((progress - self.stops[index]) / (self.stops[right] - self.stops[index]))
             * (ramp.len() - 1) as f64;
         let low = (t.floor() as usize).min(ramp.len() - 1);
         let high = (low + 1).min(ramp.len() - 1);
@@ -316,7 +359,8 @@ impl PreviewLut {
         let mut pixel = [0; 4];
         for channel in 0..4 {
             pixel[channel] = ((ramp[low][channel] as f64 * (1.0 - mix))
-                + (ramp[high][channel] as f64 * mix)).round() as u8;
+                + (ramp[high][channel] as f64 * mix))
+                .round() as u8;
         }
         Ok(pixel)
     }
@@ -337,7 +381,8 @@ pub unsafe extern "C" fn pfx_css_gradient_raster_preview_rgba8(
     let result = (|| {
         let handle = gradient.as_ref().ok_or(NULL)?;
         let count = (width as usize).checked_mul(height as usize).ok_or(COLOR)?;
-        if count == 0 || count > MAX_RASTER_PIXELS
+        if count == 0
+            || count > MAX_RASTER_PIXELS
             || handle.options.width != width as f64
             || handle.options.height != height as f64
         {
@@ -348,7 +393,8 @@ pub unsafe extern "C" fn pfx_css_gradient_raster_preview_rgba8(
         let mut pixels = Vec::with_capacity(count * 4);
         for y in 0..height {
             for x in 0..width {
-                let position = gradient.progress_at(x as f64 + 0.5, y as f64 + 0.5)
+                let position = gradient
+                    .progress_at(x as f64 + 0.5, y as f64 + 0.5)
                     .map_err(|_| COLOR)?;
                 pixels.extend_from_slice(&lookup.sample(position)?);
             }
