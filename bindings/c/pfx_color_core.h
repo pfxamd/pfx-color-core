@@ -130,6 +130,50 @@ int32_t pfx_color_interpolate(
     uint32_t interpolation_space, uint32_t hue_method, PfxColor *out
 );
 
+
+/* Lossless CSS missing-component extension. This is a separate 48-byte wire
+ * structure: original 40-byte PfxColor ABI and numeric parsing are unchanged.
+ * missing bits: channel0=1, channel1=2, channel2=4, alpha=8.
+ * Absent values are zero-filled only when converted to numeric colors.
+ * All pointers must refer to initialized aligned live memory; owned buffers
+ * from new() must be freed exactly once. Input and output may alias except
+ * for format()'s non-overlapping text buffer.
+ */
+typedef struct PfxCssColor {
+    PfxColor color;
+    uint32_t missing;
+    uint32_t reserved; /* must be 0 */
+} PfxCssColor;
+#if defined(__cplusplus)
+static_assert(sizeof(PfxCssColor) == 48, "CSS missing color ABI changed");
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+_Static_assert(sizeof(PfxCssColor) == 48, "CSS missing color ABI changed");
+#endif
+uint32_t pfx_css_missing_color_size(void);
+PfxCssColor *pfx_css_missing_color_new(void);
+void pfx_css_missing_color_free(PfxCssColor *color);
+int32_t pfx_css_missing_color_set(
+    PfxCssColor *out, uint32_t space, double c0, double c1, double c2,
+    double alpha, uint32_t missing
+);
+uint32_t pfx_css_missing_color_get_mask(const PfxCssColor *color);
+uint32_t pfx_css_missing_color_get_space(const PfxCssColor *color);
+double pfx_css_missing_color_get_channel(const PfxCssColor *color, uint32_t index);
+double pfx_css_missing_color_get_alpha(const PfxCssColor *color);
+int32_t pfx_css_missing_color_parse(
+    const uint8_t *utf8, uint32_t length, PfxCssColor *out
+);
+int32_t pfx_css_missing_color_format(
+    const PfxCssColor *color, uint8_t *out, uint32_t capacity
+);
+int32_t pfx_css_missing_color_convert(
+    const PfxCssColor *color, uint32_t target, PfxCssColor *out
+);
+int32_t pfx_css_missing_color_interpolate(
+    const PfxCssColor *a, const PfxCssColor *b, double fraction,
+    uint32_t target, uint32_t hue_method, PfxCssColor *out
+);
+
 /* Owned opaque handles. Null indicates an invalid input/option. */
 PfxPalette *pfx_palette_tonal_new(
     const PfxColor *seed, uint32_t count, double min_lightness,
