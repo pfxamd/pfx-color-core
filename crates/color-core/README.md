@@ -8,6 +8,7 @@ Independent, first-party color mathematics, design tools and portable interfaces
 - CIE76, CIEDE2000 and Delta-E OK; **opaque in-gamut sRGB** WCAG 2.2 contrast
 - Premultiplied-alpha interpolation with shorter/longer/increasing/decreasing/**raw** hue paths, HSL/HWB/HSV powerless-hue treatment and explicit gamut checking/mapping
 - Deterministic tonal/ramp/anchored palettes, named/custom harmonies, seeded 10-color Color Study, and 2–256-stop linear/radial/conic **unit-square** gradient sampling
+- Opt-in `CssColor` missing-component API: preserve `none` channel/alpha masks, modern absolute-color round trips, analogous-set interpolation and zero-filled numeric conversion without modifying the existing `Color` type
 - Absolute CSS color parsing/formatting: HEX, legacy/modern RGB and HSL, HWB, Lab/LCH, OKLab/OKLCH, supported `color()` spaces, 148 named colors and `transparent`
 - Deterministic RGBA8 palette extraction from **caller-decoded, unpremultiplied** pixel buffers: up to 32 perceptual swatches, 64 MiB maximum input, at most 500,000 samples
 
@@ -35,7 +36,7 @@ The [Rust CI workflow](../../.github/workflows/rust-core-ci.yml) additionally ch
 
 ## Not yet implemented or verified
 
-- Full CSS Color 4 grammar: `none` missing components, relative colors, `calc()`, `var()` and other advanced expressions
+- Full CSS Color 4 grammar: `none` is supported in the **separate opt-in absolute CSS API**, but missing components are not propagated through the legacy numeric picker/workspace or arbitrary gradients. Relative colors, `calc()`, `var()` and other advanced expressions remain unsupported
 - Specialized spaces/algorithms such as OKHSL/OKHSV, Delta-E ITP, Jz/HCT; APCA is **excluded** from this Apache-2.0 Rust engine pending licensing/integration review
 - Pixel-accurate CSS gradient geometry and rendering for arbitrary box dimensions and shapes
 - Compressed PNG/JPEG/WebP decoding, ICC color management or guaranteed ColorThief visual equivalence (the **decoded RGBA8 extractor is implemented**)
