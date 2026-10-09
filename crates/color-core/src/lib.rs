@@ -21,6 +21,7 @@ pub mod interpolation;
 pub mod math;
 pub mod palettes;
 pub mod spaces;
+pub mod study;
 
 pub use contrast::{contrast_ratio, relative_luminance};
 pub use conversion::convert;
@@ -37,3 +38,4 @@ pub use palettes::{
     TonalOptions, MAX_PALETTE_COLORS,
 };
 pub use spaces::{Color, ColorError, ColorSpace};
+pub use study::{generate_color_study, ColorStudy, ColorStudyColor, ColorStudyOptions, STUDY_COUNT};
