@@ -29,7 +29,8 @@ in both implementations. Passing the gate does **not** imply parity elsewhere. W
 | CSS absolute color parsing: HEX, rgb(), hsl(), hwb(), lab(), lch(), oklab(), oklch(), color() and 148 named colors | Implemented subset; 148-name full parity gate | Advanced CSS forms still block direct picker/workspace swap |
 | CSS serialization and hex output | Implemented for the supported numeric forms, with explicit gamut mapping | Precision/missing-value semantics must still be checked |
 | HSL / HSV / HWB | Implemented and cross-checked in numeric parity tests | Eligible for future opt-in adapter |
-| OKHSL / OKHSV, A98, ProPhoto, Lab-D65 | Missing | Keep TypeScript for these conversions |
+| Adobe RGB (1998) and ProPhoto RGB | W3C matrix/transfer implementations and native/WASM/CSS support; reference and legacy comparison fixtures added | Candidate for opt-in numeric API after complete browser parity |
+| OKHSL / OKHSV, Lab-D65 | Missing | Keep TypeScript for these conversions |
 | APCA contrast | Missing | Keep TypeScript |
 | DeltaE ITP / Jz / HCT | Missing | Keep TypeScript |
 | CSS Local-MINDE gamut mapping | W3C binary search with local MINDE added and cross-checked | Parity uses perceptual tolerance; keep old UI until threshold cases pass |
@@ -62,6 +63,8 @@ rather than requiring byte-exact equality. For LCH/OKLCH hues, comparisons use
 circular angular distance; null / powerless hue is tracked separately.
 
 WCAG coefficients: Rust implements WCAG 2.2 specified sRGB luminance coefficients (0.2126 / 0.7152 / 0.0722), whereas the legacy Color.js adapter yields slightly different values through its XYZ matrix. The suite reports the largest observed ratio difference and rejects deviations >= 0.05 over its defined fixtures. Do not use the tolerance to claim exact parity or interchangeability near a compliance threshold; preserve the old UI calculation until the migration policy is agreed.
+
+Additional wide-gamut coverage: Adobe RGB (1998) uses a D65 reference and exact rational matrices; ProPhoto uses D50 with Bradford adaptation and its piecewise gamma toe. Rust, C ABI and WASM maintain distinct numeric identifiers; color() CSS parsing/serialization supports both without changing the original user input. Reference: W3C CSS Color 4, October 2026.
 
 These are smoke/regression gates, not a substitute for official numerical
 reference datasets, browser testing or a full format parser conformance suite.
