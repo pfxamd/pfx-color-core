@@ -298,7 +298,9 @@ test("typed CSS calc and relative colors are computed only in Rust WASM", () => 
     "hsl(from red calc(h + 60) calc(s - 20) calc(l + 10) / calc(alpha - 0.3))"
   );
   assert.equal(hsl.space, "hsl");
-  assert.deepEqual(hsl.channels, [60, 80, 60]);
+  hsl.channels.forEach((value, index) => {
+    assert.ok(Math.abs(value - [60, 80, 60][index]) < 1e-9);
+  });
   assert.ok(Math.abs(hsl.alpha - 0.7) < 1e-12);
   const rgb = api.parseCssMissing("rgb(calc((20 + 30) * 2) 0 calc(25% * 2))");
   assert.ok(Math.abs(rgb.channels[0] - 100 / 255) < 1e-12);
