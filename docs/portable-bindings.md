@@ -74,6 +74,41 @@ The JS gradient returns an owned object; call dispose() when finished.
 Node.js integration smoke tests are run against the actual built .wasm binary
 using built-in node:test, not a mock or JavaScript reimplementation.
 
+## Decoded image palette extraction
+
+The independent Rust core can extract up to 32 perceptually clustered
+dominant colors from unpremultiplied, row-major RGBA8 pixels. The host must
+decode compressed image files first: this is **not a PNG/JPEG/WebP decoder**
+and is not a byte-identical port of ColorThief.
+
+Input is capped at 64 MiB (16 million RGBA pixels), with a maximum of
+500,000 sampled pixels. Options include stride, sample limit, alpha
+threshold, near-white filtering and an optional rectangular region.
+Transparent pixels below the configured threshold are not counted.
+Color order is by descending sampled population and the result is
+deterministic. C consumers own the input buffer and free the returned
+opaque PfxImagePalette handle. A matching pfx_image_buffer_new / free pair
+exists for WebAssembly uploads; original input pixels may be freed
+immediately after pfx_image_new returns.
+
+Browser example using decoded ImageData pixels:
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const result = core.extractImagePalette(
+      imageData.data, imageData.width, imageData.height,
+      { count: 6, alphaThreshold: 128, maxSamples: 80000,
+        ignoreNearWhite: true }
+    );
+    console.log(result.colors[0].color);
+    console.log(result.colors[0].population, result.colors[0].proportion);
+
+The JavaScript wrapper copies pixels into a temporary Rust-owned WASM
+buffer, runs clustering wholly in Rust, collects copied palette metadata,
+and frees both input and result allocations before returning.
+Integration tests exercise real native C linking, Node.js WebAssembly,
+and browser ImageData on Chromium and Firefox at desktop/mobile sizes.
+The deployed PFx Colors image-extraction feature is **unchanged**.
+
 ## Security and ABI guarantees
 
 - These native ABI functions require valid aligned pointers; passing arbitrary
