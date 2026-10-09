@@ -37,7 +37,7 @@ fn prophoto_red_xyz_d50_matches_w3c_matrix() {
     let red = color(ColorSpace::ProPhotoRgb, [1.0, 0.0, 0.0]);
     near_channels(
         red.to(ColorSpace::XyzD50).unwrap().channels(),
-        [0.79776664490064230, 0.28807482881940130, 0.0],
+        [0.797_766_644_900_642_3, 0.288_074_828_819_401_3, 0.0],
         1e-13,
     );
 }
