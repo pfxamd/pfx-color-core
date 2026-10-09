@@ -97,3 +97,48 @@ test("rejects invalid inputs without silently masking errors", () => {
   assert.throws(() => api.interpolate(black, white, -0.5), /status/);
   assert.throws(() => api.difference(black, white, "invalid"), /Unknown/);
 });
+
+
+test("Rust CSS parser and formatter handle HEX, modern RGB, HSL, HWB and P3", () => {
+  const hex = api.parseCss("#33669980");
+  assert.equal(hex.space, "srgb");
+  assert.equal(api.formatHex(hex), "#33669980");
+
+  const red = api.parseCss("rgb(255 0 0 / 50%)");
+  assert.deepEqual(red.channels, [1, 0, 0]);
+  assert.equal(red.alpha, 0.5);
+
+  const green = api.parseCss("hsl(120 100% 50%)");
+  assert.equal(green.space, "hsl");
+  const g = api.convert(green, "srgb");
+  assert.ok(Math.abs(g.channels[1] - 1) < 1e-10);
+  assert.equal(api.formatHex(green), "#00ff00");
+
+  const blue = api.parseCss("hwb(240 0% 0%)");
+  assert.equal(blue.space, "hwb");
+  assert.equal(api.formatHex(blue), "#0000ff");
+
+  const p3 = api.parseCss("color(display-p3 0.2 0.4 0.7 / .75)");
+  assert.equal(p3.space, "display-p3");
+  assert.equal(p3.alpha, 0.75);
+  const serialized = api.formatCss(p3);
+  assert.equal(api.parseCss(serialized).space, "display-p3");
+
+  const ok = api.parseCss("oklch(64% 0.16 180deg / .4)");
+  assert.equal(ok.space, "oklch");
+  assert.equal(ok.channels[0], 0.64);
+  assert.equal(ok.alpha, 0.4);
+  assert.equal(api.formatHex(api.parseCss("transparent")), "#00000000");
+});
+
+test("Rust CSS parsing refuses unsupported grammar and invalid UTF-8-safe inputs", () => {
+  for (const value of [
+    "rgb(none 0 0)", "rgb(var(--r) 0 0)", "rgb(255 1)",
+    "hsl(240 100 50)", "color(prophoto-rgb 0.1 0.2 0.3)",
+  ]) {
+    assert.throws(() => api.parseCss(value), /CSS parse/);
+  }
+  assert.throws(() => api.parseCss(""), /1..1024/);
+  assert.throws(() => api.parseCss("a".repeat(1025)), /1..1024/);
+  assert.throws(() => api.formatCss(color("srgb", [Number.NaN, 0, 0])), /finite/);
+});
