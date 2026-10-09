@@ -31,7 +31,7 @@ in both implementations. Passing the gate does **not** imply parity elsewhere. W
 | HSL / HSV / HWB | Implemented and cross-checked in numeric parity tests | Eligible for future opt-in adapter |
 | Adobe RGB (1998) and ProPhoto RGB | W3C matrix/transfer implementations and native/WASM/CSS support; reference and legacy comparison fixtures added | Candidate for opt-in numeric API after complete browser parity |
 | OKHSL / OKHSV, Lab-D65 | Missing | Keep TypeScript for these conversions |
-| APCA contrast | Missing | Keep TypeScript |
+| APCA-W3 signed contrast | Rust computation + C/WASM/JS APIs; tested for polarity and reference values | Not a WCAG ratio; use opt-in API until migration parity is complete |
 | DeltaE ITP / Jz / HCT | Missing | Keep TypeScript |
 | CSS Local-MINDE gamut mapping | W3C binary search with local MINDE added and cross-checked | Parity uses perceptual tolerance; keep old UI until threshold cases pass |
 | CSS missing/none channel semantics, hue raw path | Missing | Keep TypeScript |
