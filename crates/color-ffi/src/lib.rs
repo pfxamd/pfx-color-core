@@ -574,7 +574,7 @@ pub unsafe extern "C" fn pfx_custom_harmony_new(
     target: u32,
     mapping: u32,
 ) -> *mut PfxCustomHarmony {
-    let result = (|| {
+    let result: Result<PfxCustomHarmony, i32> = (|| {
         Ok(PfxCustomHarmony {
             seed: read(seed)?,
             offsets: Vec::new(),
