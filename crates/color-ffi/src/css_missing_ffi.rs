@@ -4,20 +4,11 @@ use super::{from_wire, hue_method, space, to_wire, PfxColor, COLOR, ENUM, NULL};
 use pfx_color_core::{format_css_missing, interpolate_css_missing, parse_css_missing, CssColor};
 
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct PfxCssColor {
     pub color: PfxColor,
     pub missing: u32,
     pub reserved: u32,
-}
-impl Default for PfxCssColor {
-    fn default() -> Self {
-        Self {
-            color: PfxColor::default(),
-            missing: 0,
-            reserved: 0,
-        }
-    }
 }
 fn decode(wire: PfxCssColor) -> Result<CssColor, i32> {
     if wire.reserved != 0 || wire.missing > 15 {
