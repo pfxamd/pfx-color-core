@@ -6,6 +6,7 @@
 //! https://www.w3.org/TR/css-color-4/#gamut-mapping
 
 use crate::spaces::{Color, ColorError, ColorSpace};
+use crate::difference::{difference, DifferenceMethod};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GamutMap {
@@ -13,6 +14,8 @@ pub enum GamutMap {
     Clip,
     /// Reduce Oklch chroma by bisection while keeping lightness and hue.
     OklchChroma,
+    /// CSS Color 4 Binary Search with Local MINDE, JND 0.02, epsilon 0.0001.
+    Css,
 }
 
 fn bounded_rgb(space: ColorSpace) -> bool {
@@ -54,6 +57,7 @@ pub fn map_to_gamut(
     }
 
     match method {
+        GamutMap::Css => css_local_minde(input, target),
         GamutMap::Clip => {
             let channels = converted.channels().map(|v| v.clamp(0.0, 1.0));
             Color::new(target, channels, input.alpha())
@@ -98,4 +102,63 @@ pub fn map_to_gamut(
             )
         }
     }
+}
+
+
+/// CSS Color 4 §14.2.2: binary-search chroma reduction with local MINDE.
+/// Unlike a strict chroma-only mapping, nearby out-of-gamut colors may be
+/// clipped if deltaEOK between the unclipped and clipped result is <0.02.
+/// All RGB outputs are finally bounded. Does not silently map conversions.
+fn css_local_minde(input: Color, target: ColorSpace) -> Result<Color, ColorError> {
+    let source = input.to(ColorSpace::Oklch)?.channels();
+    let alpha = input.alpha();
+    let [l, chroma, hue] = source;
+    if l <= 0.0 {
+        return Color::new(target, [0.0; 3], alpha);
+    }
+    if l >= 1.0 {
+        return Color::new(target, [1.0; 3], alpha);
+    }
+
+    let clip = |color: Color| -> Result<Color, ColorError> {
+        Color::new(
+            target,
+            color.to(target)?.channels().map(|value| value.clamp(0.0, 1.0)),
+            alpha,
+        )
+    };
+    let jnd = 0.02;
+    let epsilon = 0.0001;
+    let mut current = input.to(ColorSpace::Oklch)?;
+    let mut clipped = clip(current)?;
+    if difference(current, clipped, DifferenceMethod::Ok)? < jnd {
+        return Ok(clipped);
+    }
+
+    let mut low = 0.0;
+    let mut high = chroma.max(0.0);
+    let mut min_in_gamut = true;
+    for _ in 0..128 {
+        if high - low <= epsilon {
+            break;
+        }
+        let c = (high + low) / 2.0;
+        current = Color::new(ColorSpace::Oklch, [l, c, hue], alpha)?;
+        if min_in_gamut && is_in_gamut(current, target)? {
+            low = c;
+            continue;
+        }
+        clipped = clip(current)?;
+        let delta = difference(current, clipped, DifferenceMethod::Ok)?;
+        if delta < jnd {
+            if jnd - delta < epsilon {
+                return Ok(clipped);
+            }
+            min_in_gamut = false;
+            low = c;
+        } else {
+            high = c;
+        }
+    }
+    Ok(clipped)
 }
