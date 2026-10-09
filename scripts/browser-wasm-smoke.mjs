@@ -62,6 +62,10 @@ try {
             const red = core.parseCss("#ff0000");
             const blue = core.parseCss("#0000ff");
             const mixed = core.interpolate(red, blue, 0.5, { space: "srgb" });
+            const absent = core.parseCssMissing("hsl(none 70% 50% / none)");
+            const solid = core.parseCssMissing("hsl(120 70% 50% / .8)");
+            const missingMix = core.interpolateCssMissing(absent, solid, .5, { space: "hsl" });
+            const missingCss = core.formatCssMissing(absent);
             const generated = core.anchoredPalette([red, blue, red], {
               count: 5, space: "srgb", gamut: "clip",
             });
@@ -87,6 +91,10 @@ try {
             workspace.undo();
             return {
               mixed: mixed.channels,
+              missingMask: absent.missingMask,
+              missingMix: missingMix.channels,
+              missingAlpha: missingMix.alpha,
+              missingCss,
               paletteLength: generated.length,
               paletteCenter: generated[2].color.channels,
               customLength: custom.length,
@@ -102,6 +110,10 @@ try {
             };
           });
           assert.deepEqual(result.mixed, [0.5, 0, 0.5]);
+          assert.equal(result.missingMask, 9);
+          assert.ok(result.missingCss.includes("none"));
+          assert.ok(Math.abs(result.missingMix[0] - 120) < 1e-8);
+          assert.ok(Math.abs(result.missingAlpha - 0.8) < 1e-8);
           assert.equal(result.paletteLength, 5);
           assert.deepEqual(result.paletteCenter, [0, 0, 1]);
           assert.equal(result.customLength, 3);
