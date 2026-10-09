@@ -1,11 +1,11 @@
 //! C and WebAssembly interface for decoded RGBA8 image palette extraction.
 //! The caller decodes pixels; the returned palette owns the result, not pixels.
 
+use crate::{write, PfxColor, INDEX, NULL};
 use pfx_color_core::{
     extract_image_palette, ImagePalette, ImagePaletteOptions, ImageRegion,
     MAX_IMAGE_PALETTE_COLORS, MAX_IMAGE_SAMPLES,
 };
-use crate::{write, PfxColor, INDEX, NULL};
 
 const MAX_RGBA_BYTES: usize = 64 * 1024 * 1024;
 
@@ -81,7 +81,8 @@ pub unsafe extern "C" fn pfx_image_new(
                 ignore_near_white: ignore_near_white == 1,
                 region,
             },
-        ).ok()
+        )
+        .ok()
     })();
     result
         .map(|result| Box::into_raw(Box::new(PfxImagePalette { result })))
@@ -133,10 +134,7 @@ pub unsafe extern "C" fn pfx_image_get(
 /// # Safety
 /// Input must be null or a valid live image handle.
 #[no_mangle]
-pub unsafe extern "C" fn pfx_image_population(
-    ptr: *const PfxImagePalette,
-    index: u32,
-) -> i32 {
+pub unsafe extern "C" fn pfx_image_population(ptr: *const PfxImagePalette, index: u32) -> i32 {
     ptr.as_ref()
         .and_then(|h| h.result.colors.get(index as usize))
         .map_or(INDEX, |item| item.population as i32)
@@ -146,10 +144,7 @@ pub unsafe extern "C" fn pfx_image_population(
 /// # Safety
 /// Input must be null or a valid live image handle.
 #[no_mangle]
-pub unsafe extern "C" fn pfx_image_proportion(
-    ptr: *const PfxImagePalette,
-    index: u32,
-) -> f64 {
+pub unsafe extern "C" fn pfx_image_proportion(ptr: *const PfxImagePalette, index: u32) -> f64 {
     ptr.as_ref()
         .and_then(|h| h.result.colors.get(index as usize))
         .map_or(f64::NAN, |item| item.proportion)
@@ -170,10 +165,11 @@ mod tests {
 
     #[test]
     fn native_image_ffi_round_trip() {
-        let bytes = [255, 0, 0, 255, 255, 0, 0, 255, 0, 0, 255, 255, 255, 0, 0, 255];
-        let handle = unsafe {
-            pfx_image_new(bytes.as_ptr(), 16, 2, 2, 2, 1, 100, 128, 0, 0, 0, 0, 0)
-        };
+        let bytes = [
+            255, 0, 0, 255, 255, 0, 0, 255, 0, 0, 255, 255, 255, 0, 0, 255,
+        ];
+        let handle =
+            unsafe { pfx_image_new(bytes.as_ptr(), 16, 2, 2, 2, 1, 100, 128, 0, 0, 0, 0, 0) };
         assert!(!handle.is_null());
         unsafe {
             assert_eq!(pfx_image_len(handle), 2);
@@ -193,19 +189,21 @@ mod tests {
     fn native_image_ffi_rejects_invalid_parameters() {
         let bytes = [255_u8, 0, 0, 255];
         unsafe {
-            assert!(pfx_image_new(bytes.as_ptr(), 3, 1, 1, 2, 1,
-                100, 128, 0, 0, 0, 0, 0).is_null());
-            assert!(pfx_image_new(std::ptr::null(), 4, 1, 1, 2, 1,
-                100, 128, 0, 0, 0, 0, 0).is_null());
-            assert!(pfx_image_new(bytes.as_ptr(), 4, 1, 1, 2, 1,
-                100, 128, 0, 0, 0, 1, 0).is_null());
+            assert!(
+                pfx_image_new(bytes.as_ptr(), 3, 1, 1, 2, 1, 100, 128, 0, 0, 0, 0, 0).is_null()
+            );
+            assert!(
+                pfx_image_new(std::ptr::null(), 4, 1, 1, 2, 1, 100, 128, 0, 0, 0, 0, 0).is_null()
+            );
+            assert!(
+                pfx_image_new(bytes.as_ptr(), 4, 1, 1, 2, 1, 100, 128, 0, 0, 0, 1, 0).is_null()
+            );
             assert_eq!(pfx_image_len(std::ptr::null()), 0);
             assert_eq!(pfx_image_population(std::ptr::null(), 0), INDEX);
             assert!(pfx_image_proportion(std::ptr::null(), 0).is_nan());
         }
     }
 }
-
 
 /// Allocate decoded-image upload memory, at most 64 MiB. Rust-owned.
 /// The caller must use pfx_image_buffer_free with the original length.
