@@ -218,3 +218,55 @@ test("WASM customHarmony handles arbitrary hue offsets without dependencies", ()
   assert.throws(() => api.customHarmony(seed, [20]), /2..256/);
   assert.throws(() => api.customHarmony(seed, [0, Number.NaN]), /finite/);
 });
+
+
+test("real Rust WASM extracts perceptual palette from decoded RGBA8", () => {
+  const rgba = new Uint8ClampedArray([
+    ...Array(8).fill([255, 0, 0, 255]).flat(),
+    ...Array(4).fill([0, 255, 0, 255]).flat(),
+    ...Array(4).fill([0, 0, 255, 255]).flat(),
+  ]);
+  const result = api.extractImagePalette(rgba, 4, 4, { count: 3 });
+  assert.equal(result.sampledPixels, 16);
+  assert.equal(result.eligiblePixels, 16);
+  assert.equal(result.colors.length, 3);
+  assert.deepEqual(result.colors.map(e => e.population), [8, 4, 4]);
+  assert.deepEqual(result.colors[0].color.channels, [1, 0, 0]);
+  assert.equal(result.colors[0].color.alpha, 1);
+  assert.ok(Math.abs(result.colors.reduce((s, c) => s + c.proportion, 0) - 1) < 1e-12);
+  const repeat = api.extractImagePalette(rgba, 4, 4, { count: 3 });
+  assert.deepEqual(repeat, result);
+});
+
+test("Rust image extraction handles transparency, white filtering and image regions", () => {
+  const rgba = new Uint8Array([
+    255, 0, 0, 255, 255, 255, 255, 255,
+    0, 0, 255, 0, 0, 255, 0, 100,
+  ]);
+  const selected = api.extractImagePalette(rgba, 4, 1, {
+    count: 3, ignoreNearWhite: true, alphaThreshold: 128,
+  });
+  assert.equal(selected.sampledPixels, 4);
+  assert.equal(selected.eligiblePixels, 1);
+  assert.deepEqual(selected.colors[0].color.channels, [1, 0, 0]);
+  assert.deepEqual(api.extractImagePalette(rgba, 4, 1, {
+    count: 3, region: { x: 0, y: 0, width: 1, height: 1 },
+  }).colors[0].color.channels, [1, 0, 0]);
+  assert.throws(() => api.extractImagePalette(rgba, 4, 1, {
+    alphaThreshold: 255, ignoreNearWhite: true, region: { x: 1, y: 0, width: 1, height: 1 },
+  }), /no eligible pixels/);
+});
+
+test("Rust image input validation rejects unsafe or malformed memory shapes", () => {
+  const tiny = new Uint8Array([255, 0, 0, 255]);
+  assert.throws(() => api.extractImagePalette(tiny, 2, 2), /RGBA8/);
+  assert.throws(() => api.extractImagePalette(tiny, 0, 1), /width/);
+  assert.throws(() => api.extractImagePalette(tiny, 1, 1, { count: 33 }), /count/);
+  assert.throws(() => api.extractImagePalette(tiny, 1, 1, { stride: 0 }), /stride/);
+  assert.throws(() => api.extractImagePalette(tiny, 1, 1, {
+    region: { x: 1, y: 0, width: 1, height: 1 },
+  }), /region.x/);
+  assert.throws(() => api.extractImagePalette(tiny, 1, 1, { alphaThreshold: 256 }), /alphaThreshold/);
+  assert.throws(() => api.extractImagePalette(tiny, 1, 1, { maxSamples: 500001 }), /maxSamples/);
+  assert.throws(() => api.extractImagePalette(tiny, 9000, 9000), /64 MiB/);
+});
