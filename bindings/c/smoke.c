@@ -191,9 +191,9 @@ int main(void) {
     CHECK(css_pixels != NULL);
     CHECK(pfx_css_gradient_add_stop(css_pixels, 0.0, &black) == 0);
     CHECK(pfx_css_gradient_add_stop(css_pixels, 1.0, &white) == 0);
-    CHECK(pfx_css_gradient_sample_pixel(css_pixels, 0.0, 0.0, &out) == 0);
-    CHECK(fabs(out.channels[0]) < 1e-12);
     CHECK(pfx_css_gradient_sample_pixel(css_pixels, 0.0, 120.0, &out) == 0);
+    CHECK(fabs(out.channels[0]) < 1e-12);
+    CHECK(pfx_css_gradient_sample_pixel(css_pixels, 0.0, 0.0, &out) == 0);
     CHECK(fabs(out.channels[0] - 1.0 / 3.0) < 1e-10);
     CHECK(pfx_css_gradient_sample_progress(css_pixels, 0.5, &out) == 0);
     CHECK(fabs(out.channels[0] - 0.5) < 1e-12);
