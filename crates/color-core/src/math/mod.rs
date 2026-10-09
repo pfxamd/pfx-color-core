@@ -68,11 +68,20 @@ mod tests {
 
     #[test]
     fn signed_transfer_functions_round_trip_extended_channels() {
-        for x in [-1.25, -0.5, -0.04045, 0.0, 0.04045, 0.5, 1.25] {
+        for x in [-1.25, -0.5, -0.0404, 0.0, 0.0404, 0.5, 1.25] {
             let value = encode_srgb(decode_srgb(x));
             assert!((value - x).abs() < 1e-12, "sRGB failed for {x}");
             let value = encode_rec2020(decode_rec2020(x));
             assert!((value - x).abs() < 1e-12, "Rec.2020 failed for {x}");
         }
+    }
+
+    #[test]
+    fn srgb_specified_breakpoint_has_documented_numerical_discontinuity() {
+        // CSS Color 4 specifies separately rounded switch thresholds
+        // (0.04045 and 0.0031308) so the two branches are not exact inverses
+        // at the breakpoint. This is not a reason to rewrite the standard.
+        let boundary = encode_srgb(decode_srgb(0.04045));
+        assert!((boundary - 0.04045).abs() < 5e-8);
     }
 }
