@@ -1,6 +1,8 @@
 //! Opt-in, pixel-coordinate CSS gradient builder. The existing normalized
 //! pfx_gradient_* ABI and 40-byte PfxColor layout remain unchanged.
-use super::{finish_color, from_wire, gamut_method, hue_method, space, PfxColor, COLOR, ENUM, LIMIT, NULL};
+use super::{
+    finish_color, from_wire, gamut_method, hue_method, space, PfxColor, COLOR, ENUM, LIMIT, NULL,
+};
 use pfx_color_core::{
     Color, ColorSpace, CssGradient, CssGradientKind, CssGradientOptions, CssRadialExtent,
     CssRadialShape, CssRadialSize, GradientStop,
@@ -47,9 +49,13 @@ pub extern "C" fn pfx_css_gradient_new(
     mapping: u32,
 ) -> *mut PfxCssGradient {
     let result = (|| {
-        if repeating > 1 { return Err(ENUM); }
+        if repeating > 1 {
+            return Err(ENUM);
+        }
         let kind = match kind {
-            0 => CssGradientKind::Linear { angle_degrees: angle },
+            0 => CssGradientKind::Linear {
+                angle_degrees: angle,
+            },
             1 => CssGradientKind::Radial {
                 center_x,
                 center_y,
@@ -80,16 +86,26 @@ pub extern "C" fn pfx_css_gradient_new(
         // Eagerly validate geometry before returning an owned handle.
         let dummy = Color::new(ColorSpace::Srgb, [0.0; 3], 1.0).map_err(|_| COLOR)?;
         let stops = [
-            GradientStop { position: 0.0, color: dummy },
-            GradientStop { position: 1.0, color: dummy },
+            GradientStop {
+                position: 0.0,
+                color: dummy,
+            },
+            GradientStop {
+                position: 1.0,
+                color: dummy,
+            },
         ];
         CssGradient::new(&stops, options).map_err(|_| COLOR)?;
         Ok(options)
     })();
-    result.map(|options| Box::into_raw(Box::new(PfxCssGradient {
-        stops: Vec::new(),
-        options,
-    }))).unwrap_or(std::ptr::null_mut())
+    result
+        .map(|options| {
+            Box::into_raw(Box::new(PfxCssGradient {
+                stops: Vec::new(),
+                options,
+            }))
+        })
+        .unwrap_or(std::ptr::null_mut())
 }
 
 /// # Safety
@@ -97,7 +113,9 @@ pub extern "C" fn pfx_css_gradient_new(
 /// color must be a readable, aligned, initialized live PfxColor.
 #[no_mangle]
 pub unsafe extern "C" fn pfx_css_gradient_add_stop(
-    gradient: *mut PfxCssGradient, position: f64, color: *const PfxColor,
+    gradient: *mut PfxCssGradient,
+    position: f64,
+    color: *const PfxColor,
 ) -> i32 {
     let result = (|| {
         let handle = gradient.as_mut().ok_or(NULL)?;
@@ -120,11 +138,17 @@ fn evaluated(handle: &PfxCssGradient) -> Result<CssGradient, i32> {
 /// gradient and out must be initialized, aligned, live pointers.
 #[no_mangle]
 pub unsafe extern "C" fn pfx_css_gradient_sample_pixel(
-    gradient: *const PfxCssGradient, x: f64, y: f64, out: *mut PfxColor,
+    gradient: *const PfxCssGradient,
+    x: f64,
+    y: f64,
+    out: *mut PfxColor,
 ) -> i32 {
     let result = (|| {
         let handle = gradient.as_ref().ok_or(NULL)?;
-        Ok(evaluated(handle)?.sample_pixel(x, y).map_err(|_| COLOR)?.color)
+        Ok(evaluated(handle)?
+            .sample_pixel(x, y)
+            .map_err(|_| COLOR)?
+            .color)
     })();
     finish_color(result, out)
 }
@@ -133,11 +157,16 @@ pub unsafe extern "C" fn pfx_css_gradient_sample_pixel(
 /// gradient and out must be initialized, aligned, live pointers.
 #[no_mangle]
 pub unsafe extern "C" fn pfx_css_gradient_sample_progress(
-    gradient: *const PfxCssGradient, position: f64, out: *mut PfxColor,
+    gradient: *const PfxCssGradient,
+    position: f64,
+    out: *mut PfxColor,
 ) -> i32 {
     let result = (|| {
         let handle = gradient.as_ref().ok_or(NULL)?;
-        Ok(evaluated(handle)?.sample_progress(position).map_err(|_| COLOR)?.color)
+        Ok(evaluated(handle)?
+            .sample_progress(position)
+            .map_err(|_| COLOR)?
+            .color)
     })();
     finish_color(result, out)
 }
@@ -147,5 +176,7 @@ pub unsafe extern "C" fn pfx_css_gradient_sample_progress(
 /// pfx_css_gradient_new, not previously freed.
 #[no_mangle]
 pub unsafe extern "C" fn pfx_css_gradient_free(ptr: *mut PfxCssGradient) {
-    if !ptr.is_null() { drop(Box::from_raw(ptr)); }
+    if !ptr.is_null() {
+        drop(Box::from_raw(ptr));
+    }
 }
