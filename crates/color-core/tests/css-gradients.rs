@@ -231,12 +231,44 @@ fn repeating_zero_length_does_not_divide_by_zero() {
     .unwrap();
     assert_eq!(
         grad.sample_progress(-0.5).unwrap().color.channels(),
-        [0.0, 0.0, 1.0]
+        [0.5, 0.0, 0.5]
     );
     assert_eq!(
         grad.sample_progress(1.5).unwrap().color.channels(),
-        [0.0, 0.0, 1.0]
+        [0.5, 0.0, 0.5]
     );
+}
+
+
+#[test]
+fn repeating_zero_span_averages_three_stops_in_premultiplied_srgb() {
+    // W3C CSS Images 3 reference: red 0px, white 0px, blue 0px
+    // produces the uniform light purple rgb(75%, 50%, 75%).
+    let three = [
+        GradientStop { position: 0.4, color: rgb([1.0, 0.0, 0.0], 1.0) },
+        GradientStop { position: 0.4, color: rgb([1.0, 1.0, 1.0], 1.0) },
+        GradientStop { position: 0.4, color: rgb([0.0, 0.0, 1.0], 1.0) },
+    ];
+    let gradient = CssGradient::new(&three, CssGradientOptions {
+        repeating: true, ..options(linear(90.0))
+    }).unwrap();
+    for p in [-12.0, 0.4, 20.0] {
+        let color = gradient.sample_progress(p).unwrap().color;
+        close(color.channels()[0], 0.75);
+        close(color.channels()[1], 0.5);
+        close(color.channels()[2], 0.75);
+    }
+    let transparent = [
+        GradientStop { position: 0.4, color: rgb([1.0, 0.0, 0.0], 0.0) },
+        GradientStop { position: 0.4, color: rgb([0.0, 0.0, 1.0], 1.0) },
+    ];
+    let gradient = CssGradient::new(&transparent, CssGradientOptions {
+        repeating: true, ..options(linear(90.0))
+    }).unwrap();
+    let avg = gradient.sample_progress(0.7).unwrap().color;
+    close(avg.alpha(), 0.5);
+    close(avg.channels()[0], 0.0);
+    close(avg.channels()[2], 1.0);
 }
 
 #[test]
