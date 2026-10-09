@@ -10,11 +10,12 @@
 //! C/WASM/JS callers must use ABI revision pfx_abi_version() == 1.
 
 use pfx_color_core::{
-    contrast_ratio, difference, format_css, format_hex, generate_color_study, generate_harmony,
-    interpolate, is_in_gamut, map_to_gamut, parse_css, ramp_palette, relative_luminance,
-    tonal_palette, Color, ColorSpace, ColorStudy, ColorStudyOptions, DifferenceMethod, GamutMap,
-    Gradient, GradientKind, GradientOptions, GradientStop, HarmonyOptions, HarmonyScheme,
-    HueMethod, Palette, RampOptions, TonalOptions,
+    anchored_palette, contrast_ratio, difference, format_css, format_hex, generate_color_study,
+    generate_custom_harmony, generate_harmony, interpolate, is_in_gamut, map_to_gamut, parse_css,
+    ramp_palette, relative_luminance, tonal_palette, Color, ColorSpace, ColorStudy,
+    ColorStudyOptions, DifferenceMethod, GamutMap, Gradient, GradientKind, GradientOptions,
+    GradientStop, Harmony, HarmonyOptions, HarmonyScheme, HueMethod, Palette, RampOptions,
+    TonalOptions,
 };
 
 const NULL: i32 = -1;
@@ -468,6 +469,172 @@ pub unsafe extern "C" fn pfx_palette_harmony_new(
                 .collect(),
         })),
         Err(_) => std::ptr::null_mut(),
+    }
+}
+
+
+fn wrap_harmony(value: Harmony) -> *mut PfxPalette {
+    Box::into_raw(Box::new(PfxPalette {
+        values: value
+            .colors
+            .into_iter()
+            .map(|entry| PfxPaletteEntry {
+                color: entry.color,
+                position: entry.index as f64,
+                mapped: entry.mapped,
+                hue_offset: entry.hue_offset,
+            })
+            .collect(),
+    }))
+}
+
+/// Opaque owned anchor collection. Build with pfx_anchors_add, turn into a
+/// palette with pfx_anchors_palette, then destroy with pfx_anchors_free.
+pub struct PfxAnchors {
+    colors: Vec<Color>,
+}
+
+/// Create an empty owned anchor builder. Add 2..=256 anchors before building.
+#[no_mangle]
+pub extern "C" fn pfx_anchors_new() -> *mut PfxAnchors {
+    Box::into_raw(Box::new(PfxAnchors {
+        colors: Vec::new(),
+    }))
+}
+
+/// Push an anchor. 0 success; negative status for null or invalid input.
+/// The builder remains unchanged on error.
+/// # Safety
+/// builder must point to a live PfxAnchors from pfx_anchors_new;
+/// color must point to a readable, live and aligned PfxColor.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_anchors_add(
+    builder: *mut PfxAnchors,
+    color: *const PfxColor,
+) -> i32 {
+    let result = (|| {
+        let value = read(color)?;
+        let builder = builder.as_mut().ok_or(NULL)?;
+        if builder.colors.len() >= LIMIT {
+            return Err(COLOR);
+        }
+        builder.colors.push(value);
+        Ok(0)
+    })();
+    result.unwrap_or_else(|error| error)
+}
+
+/// Generate a palette from 2..=256 inserted anchors. The original builder
+/// remains alive, and every output palette owns an independent copy.
+/// # Safety
+/// builder must be a live pointer returned by pfx_anchors_new.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_anchors_palette(
+    builder: *const PfxAnchors,
+    count: u32,
+    interpolation_space: u32,
+    target: u32,
+    hue: u32,
+    mapping: u32,
+) -> *mut PfxPalette {
+    let result = (|| {
+        let builder = builder.as_ref().ok_or(NULL)?;
+        anchored_palette(
+            &builder.colors,
+            RampOptions {
+                count: count as usize,
+                interpolation_space: space(interpolation_space)?,
+                target_space: space(target)?,
+                hue_method: hue_method(hue)?,
+                gamut_map: gamut_method(mapping)?,
+            },
+        )
+        .map_err(|_| COLOR)
+    })();
+    result.map(wrap_palette).unwrap_or(std::ptr::null_mut())
+}
+
+/// # Safety
+/// builder must be null or a live pointer from pfx_anchors_new.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_anchors_free(builder: *mut PfxAnchors) {
+    if !builder.is_null() {
+        drop(Box::from_raw(builder));
+    }
+}
+
+/// Opaque owned collection of custom hue offsets, attached to a base color.
+pub struct PfxCustomHarmony {
+    seed: Color,
+    offsets: Vec<f64>,
+    options: HarmonyOptions,
+}
+
+/// Initialize a custom harmony builder. Returns null on invalid color or
+/// target options. Add 2..=256 offsets, then generate a palette.
+/// # Safety
+/// seed must point to a live, readable PfxColor.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_custom_harmony_new(
+    seed: *const PfxColor,
+    target: u32,
+    mapping: u32,
+) -> *mut PfxCustomHarmony {
+    let result = (|| {
+        Ok(PfxCustomHarmony {
+            seed: read(seed)?,
+            offsets: Vec::new(),
+            options: HarmonyOptions {
+                target_space: space(target)?,
+                gamut_map: gamut_method(mapping)?,
+                ..HarmonyOptions::default()
+            },
+        })
+    })();
+    result
+        .map(|builder| Box::into_raw(Box::new(builder)))
+        .unwrap_or(std::ptr::null_mut())
+}
+
+/// Append finite hue offset in degrees. No change on invalid input.
+/// # Safety
+/// builder must be a live pointer from pfx_custom_harmony_new.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_custom_harmony_add(
+    builder: *mut PfxCustomHarmony,
+    offset_degrees: f64,
+) -> i32 {
+    let Some(builder) = builder.as_mut() else {
+        return NULL;
+    };
+    if !offset_degrees.is_finite() || builder.offsets.len() >= LIMIT {
+        return COLOR;
+    }
+    builder.offsets.push(offset_degrees);
+    0
+}
+
+/// Generate owned custom harmony; builder is reusable after this call.
+/// # Safety
+/// builder must be a live pointer from pfx_custom_harmony_new.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_custom_harmony_palette(
+    builder: *const PfxCustomHarmony,
+) -> *mut PfxPalette {
+    let Some(builder) = builder.as_ref() else {
+        return std::ptr::null_mut();
+    };
+    generate_custom_harmony(builder.seed, &builder.offsets, builder.options)
+        .map(wrap_harmony)
+        .unwrap_or(std::ptr::null_mut())
+}
+
+/// # Safety
+/// builder must be null or a live pointer from pfx_custom_harmony_new.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_custom_harmony_free(builder: *mut PfxCustomHarmony) {
+    if !builder.is_null() {
+        drop(Box::from_raw(builder));
     }
 }
 
