@@ -2,7 +2,7 @@
 //!
 //! Supported: #rgb/#rgba/#rrggbb/#rrggbbaa, rgb()/rgba() modern and
 //! comma-separated legacy, hsl()/hsla(), hwb(), lab(), lch(), oklab(),
-//! oklch(), color(srgb|srgb-linear|display-p3|rec2020|xyz-d65|xyz-d50),
+//! oklch(), color(srgb|srgb-linear|display-p3|rec2020|a98-rgb|prophoto-rgb|xyz-d65|xyz-d50),
 //! transparent and selected common color names.
 //!
 //! Deliberately reject CSS missing components (\`none\`), calc()/var(),
@@ -163,6 +163,8 @@ fn function(input: &str) -> Result<Color, ColorError> {
             "srgb-linear" => ColorSpace::SrgbLinear,
             "display-p3" => ColorSpace::DisplayP3,
             "rec2020" => ColorSpace::Rec2020,
+            "a98-rgb" => ColorSpace::A98Rgb,
+            "prophoto-rgb" => ColorSpace::ProPhotoRgb,
             "xyz" | "xyz-d65" => ColorSpace::XyzD65,
             "xyz-d50" => ColorSpace::XyzD50,
             _ => return Err(ColorError::UnsupportedSyntax),
@@ -451,6 +453,8 @@ pub fn format_css(input: Color) -> Result<String, ColorError> {
                 ColorSpace::SrgbLinear => "srgb-linear",
                 ColorSpace::DisplayP3 => "display-p3",
                 ColorSpace::Rec2020 => "rec2020",
+                ColorSpace::A98Rgb => "a98-rgb",
+                ColorSpace::ProPhotoRgb => "prophoto-rgb",
                 ColorSpace::XyzD65 => "xyz-d65",
                 ColorSpace::XyzD50 => "xyz-d50",
                 // Nonstandard color spaces are converted to sRGB before
