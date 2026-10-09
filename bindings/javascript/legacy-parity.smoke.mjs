@@ -261,3 +261,21 @@ test("HSL, HSV and HWB numeric conversions agree with legacy color models", () =
     }
   }
 });
+
+
+test("CSS gamut reduction stays perceptually close to legacy CSS mapping", () => {
+  for (const seed of [
+    { space: "display-p3", channels: [0, 1, 0], alpha: 1 },
+    { space: "oklch", channels: [0.7, 0.31, 30], alpha: 1 },
+    { space: "oklch", channels: [0.6, 0.32, 255], alpha: 1 },
+    { space: "srgb", channels: [1.1, -0.2, 0.4], alpha: 1 },
+  ]) {
+    const rustResult = rust.mapGamut(seed, "srgb", "css");
+    const oldResult = legacy.mapToGamut(ts(seed), { targetSpace: "srgb", method: "css" });
+    const oldColor = { space: oldResult.space, channels: oldResult.coordinates, alpha: oldResult.alpha };
+    const delta = rust.difference(rustResult, oldColor, "ok");
+    assert.ok(delta < 0.05,
+      "CSS gamut mapping discrepancy from legacy exceeds 0.05 DeltaEOK: " + delta);
+    assert.equal(rust.isInGamut(rustResult, "srgb"), true);
+  }
+});

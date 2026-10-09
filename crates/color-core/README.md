@@ -10,7 +10,7 @@ A portable, first-party color science implementation in Rust with **zero externa
 - CIE76, CIEDE2000, Delta-E OK
 - WCAG 2.2 luminance and ratio for opaque, sRGB-in-gamut colors
 - Premultiplied-alpha interpolation, with four polar hue paths
-- Explicit gamut checks, clipping and Oklch chroma reduction
+- Explicit gamut checks, clipping, Oklch chroma reduction, and W3C CSS Local MINDE
 - **Palettes:** tonal scales, two-anchor ramps and multiple-anchor ramps
 - **Harmonies:** analogous, complementary, split-complementary, triadic, tetradic, square, custom hue offsets
 - **Gradients:** ordered and duplicate-position hard stops, color-space interpolation, linear/radial/conic sampling in a normalized unit square

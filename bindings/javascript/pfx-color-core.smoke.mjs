@@ -142,3 +142,16 @@ test("Rust CSS parsing refuses unsupported grammar and invalid UTF-8-safe inputs
   assert.throws(() => api.parseCss("a".repeat(1025)), /1..1024/);
   assert.throws(() => api.formatCss(color("srgb", [Number.NaN, 0, 0])), /finite/);
 });
+
+
+test("CSS Local MINDE gamut mapping preserves gamut and alpha", () => {
+  for (const wide of [
+    color("display-p3", [0, 1, 0], 0.6),
+    color("oklch", [0.75, 0.38, 40]),
+    color("srgb", [1.2, -0.2, 0.5]),
+  ]) {
+    const mapped = api.mapGamut(wide, "srgb", "css");
+    assert.ok(mapped.channels.every(v => v >= 0 && v <= 1));
+    assert.equal(mapped.alpha, wide.alpha);
+  }
+});

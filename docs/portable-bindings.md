@@ -28,7 +28,7 @@ functions exactly once. Color input/output pointers may alias.
 The C ABI exposes:
 - sRGB, P3, Rec.2020, XYZ, Lab and OKLab conversion;
 - CIE76/CIEDE2000/OK differences, WCAG ratio and luminance;
-- interpolation, gamut check and mapping;
+- interpolation, gamut check and mapping (clip, radial Oklch or W3C Local MINDE);
 - tonal and two-color ramp palettes;
 - six named harmony schemes;
 - multi-stop gradient builders with normalized sample and sampleXY.

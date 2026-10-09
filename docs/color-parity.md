@@ -31,7 +31,7 @@ in both implementations. Passing the gate does **not** imply parity elsewhere. W
 | HSL / HSV / HWB / OKHSL / OKHSV, A98, ProPhoto, Lab-D65 | Missing | **Block picker and wide-format conversion swap** |
 | APCA contrast | Missing | Keep TypeScript |
 | DeltaE ITP / Jz / HCT | Missing | Keep TypeScript |
-| CSS Local-MINDE gamut mapping | Missing: Rust provides explicit clip/Oklch chroma | Keep TypeScript gamut output; difference is NOT numeric parity |
+| CSS Local-MINDE gamut mapping | W3C binary search with local MINDE added and cross-checked | Parity uses perceptual tolerance; keep old UI until threshold cases pass |
 | CSS missing/none channel semantics, hue raw path | Missing | Keep TypeScript |
 | Full CSS-compatible gradient serialization/geometry | Missing: Rust normalized unit square | Keep TypeScript |
 | Arbitrary anchor palettes/custom harmony in WASM ABI | Rust core only; binding missing | Keep TypeScript |
