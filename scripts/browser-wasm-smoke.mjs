@@ -78,6 +78,12 @@ try {
             ], { interpolationSpace: "srgb" });
             const css = pfxGradientToCss(workspace.getState().gradient);
             const green = workspace.setColorFromGradient(0.5);
+            const imageData = new ImageData(2, 2);
+            imageData.data.set([
+              255, 0, 0, 255, 255, 0, 0, 255,
+              0, 0, 255, 255, 255, 0, 0, 255,
+            ]);
+            const extracted = core.extractImagePalette(imageData.data, 2, 2, { count: 2 });
             workspace.undo();
             return {
               mixed: mixed.channels,
@@ -90,6 +96,9 @@ try {
               selected: green.color.hex,
               afterUndo: workspace.getState().color.hex,
               pickerHex: picker.setColorChannel("#ff0000", "hsl", 0, 120).hex,
+              extractedCount: extracted.colors.length,
+              extractedDominant: extracted.colors[0].color.channels,
+              extractedPopulation: extracted.colors[0].population,
             };
           });
           assert.deepEqual(result.mixed, [0.5, 0, 0.5]);
@@ -102,6 +111,9 @@ try {
           assert.equal(result.selected, "#800080");
           assert.equal(result.afterUndo, "#336699");
           assert.equal(result.pickerHex, "#00ff00");
+          assert.equal(result.extractedCount, 2);
+          assert.deepEqual(result.extractedDominant, [1, 0, 0]);
+          assert.equal(result.extractedPopulation, 3);
           assert.deepEqual(errors, [], "Browser runtime errors: " + errors.join("; "));
           console.log(name, viewport.width + "x" + viewport.height, "PASS");
         } finally {
