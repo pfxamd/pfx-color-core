@@ -14,7 +14,7 @@ It imports the actual ColorJsAdapter compiled from the repository AND the actual
 pfx_color_ffi.wasm; **no mock calculations**. This comparison fixture uses
 explicitly mapped color-space identifiers (\`p3\` versus \`display-p3\`) and
 numeric color inputs. Tests restrict semantic comparison to operations defined
-in both implementations. Passing the gate does **not** imply parity elsewhere.
+in both implementations. Passing the gate does **not** imply parity elsewhere. WCAG is tested as a separately identified, **bounded deviation**, not exact numerical parity.
 
 ## Coverage matrix
 
@@ -22,7 +22,7 @@ in both implementations. Passing the gate does **not** imply parity elsewhere.
 | --- | --- | --- |
 | Numeric sRGB, linear sRGB, Display-P3, Rec.2020, XYZ, Lab, LCH, OKLab, OKLCH conversions | Present, executable parity gate | Candidate for opt-in numeric API only |
 | CIE76, CIEDE2000, OK difference | Present, executable parity gate | Candidate for opt-in numeric API only |
-| WCAG contrast of opaque in-gamut colors | Present, executable parity gate | Candidate for opt-in numeric API only |
+| WCAG contrast of opaque in-gamut colors | Standard-conformant Rust calculation; legacy coefficient difference quantified in parity suite | **Not exact parity**; keep current UI until display/threshold behavior is explicitly accepted |
 | Alpha-aware interpolation (shared numeric spaces) | Present, executable parity gate | Candidate for opt-in numeric API only |
 | RGB gamut membership | Present, executable parity gate | Candidate for opt-in numeric API only |
 | Tonal palettes, named harmonies and multi-stop gradients (shared cases) | Present, executable parity gate | Candidate for opt-in numeric API only |
@@ -59,6 +59,8 @@ W3C chromaticity and white-point constants differ slightly across libraries.
 Parity tests compare floating-point coordinates with **declared** tolerances
 rather than requiring byte-exact equality. For LCH/OKLCH hues, comparisons use
 circular angular distance; null / powerless hue is tracked separately.
+
+WCAG coefficients: Rust implements WCAG 2.2 specified sRGB luminance coefficients (0.2126 / 0.7152 / 0.0722), whereas the legacy Color.js adapter yields slightly different values through its XYZ matrix. The suite reports the largest observed ratio difference and rejects deviations >= 0.05 over its defined fixtures. Do not use the tolerance to claim exact parity or interchangeability near a compliance threshold; preserve the old UI calculation until the migration policy is agreed.
 
 These are smoke/regression gates, not a substitute for official numerical
 reference datasets, browser testing or a full format parser conformance suite.
