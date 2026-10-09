@@ -37,7 +37,9 @@ enum PfxColorSpace {
     PFX_OKLCH = 11,
     PFX_HSL = 12,
     PFX_HWB = 13,
-    PFX_HSV = 14
+    PFX_HSV = 14,
+    PFX_A98_RGB = 15,
+    PFX_PROPHOTO_RGB = 16
 };
 
 enum PfxDifferenceMethod {
