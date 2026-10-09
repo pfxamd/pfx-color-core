@@ -292,3 +292,23 @@ test("lossless CSS none bridge parses, serializes, interpolates, and validates m
   assert.equal(api.parseCss("rgb(10 20 30)").space, "srgb");
   assert.throws(() => api.parseCss("rgb(none 20 30)"));
 });
+
+test("typed CSS calc and relative colors are computed only in Rust WASM", () => {
+  const hsl = api.parseCssMissing(
+    "hsl(from red calc(h + 60) calc(s - 20) calc(l + 10) / calc(alpha - 0.3))"
+  );
+  assert.equal(hsl.space, "hsl");
+  assert.deepEqual(hsl.channels, [60, 80, 60]);
+  assert.ok(Math.abs(hsl.alpha - 0.7) < 1e-12);
+  const rgb = api.parseCssMissing("rgb(calc((20 + 30) * 2) 0 calc(25% * 2))");
+  assert.ok(Math.abs(rgb.channels[0] - 100 / 255) < 1e-12);
+  assert.ok(Math.abs(rgb.channels[2] - 0.5) < 1e-12);
+  const color = api.parseCssMissing(
+    "color(from red srgb calc(r - 0.4) calc(g + 0.1) calc(b + 0.6) / alpha)"
+  );
+  color.channels.forEach((v,i) => assert.ok(Math.abs(v - [0.6,0.1,0.6][i]) < 1e-12));
+  assert.equal(api.parseCssMissing("rgb(from red none g b / none)").missingMask, 9);
+  assert.throws(() => api.parseCssMissing("rgb(from red calc(r + 10%) g b)"));
+  assert.throws(() => api.parseCssMissing("rgb(from var(--color) r g b)"));
+  assert.throws(() => api.parseCss("rgb(from red r g b)"));
+});
