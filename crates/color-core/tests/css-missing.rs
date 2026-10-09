@@ -133,3 +133,22 @@ fn alpha_missing_does_not_equal_literal_zero_in_mixing() {
     .unwrap();
     assert_eq!(both.missing_mask() & 8, 8);
 }
+
+#[test]
+fn hwb_same_space_single_missing_channel_borrows_whiteness() {
+    let first = parse_css_missing("hwb(20 none 30%)").unwrap();
+    let last = parse_css_missing("hwb(20 40% 30%)").unwrap();
+    let mixed = interpolate_css_missing(first, last, 0.5, ColorSpace::Hwb, HueMethod::Shorter).unwrap();
+    assert_eq!(mixed.missing_mask(), 0);
+    near(mixed.numeric().channels()[1], 40.0);
+    near(mixed.numeric().channels()[2], 30.0);
+}
+#[test]
+fn lab_opponent_pair_carries_as_lch_chroma_and_hue() {
+    let first = parse_css_missing("lab(50 none none)").unwrap();
+    let last = parse_css_missing("lch(50 40 100)").unwrap();
+    let mixed = interpolate_css_missing(first, last, 0.5, ColorSpace::Lch, HueMethod::Shorter).unwrap();
+    assert_eq!(mixed.missing_mask(), 0);
+    near(mixed.numeric().channels()[1], 40.0);
+    near(mixed.numeric().channels()[2], 100.0);
+}
