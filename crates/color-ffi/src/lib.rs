@@ -97,6 +97,7 @@ fn hue_method(code: u32) -> Result<HueMethod, i32> {
         1 => Ok(HueMethod::Longer),
         2 => Ok(HueMethod::Increasing),
         3 => Ok(HueMethod::Decreasing),
+        4 => Ok(HueMethod::Raw),
         _ => Err(ENUM),
     }
 }
