@@ -34,7 +34,10 @@ enum PfxColorSpace {
     PFX_LAB = 8,
     PFX_LCH = 9,
     PFX_OKLAB = 10,
-    PFX_OKLCH = 11
+    PFX_OKLCH = 11,
+    PFX_HSL = 12,
+    PFX_HWB = 13,
+    PFX_HSV = 14
 };
 
 enum PfxDifferenceMethod {
@@ -89,6 +92,13 @@ typedef struct PfxPalette PfxPalette;
 typedef struct PfxGradient PfxGradient;
 
 uint32_t pfx_abi_version(void);
+/* Byte buffers are owned by Rust; return with the EXACT original length. */
+uint8_t *pfx_buffer_new(uint32_t length);
+void pfx_buffer_free(uint8_t *ptr, uint32_t length);
+int32_t pfx_css_parse(const uint8_t *utf8, uint32_t byte_length, PfxColor *out);
+/* Returns string length excluding trailing NUL or negative error. */
+int32_t pfx_css_format(const PfxColor *color, uint32_t format_kind,
+                       uint32_t mapping, uint8_t *out, uint32_t capacity);
 uint32_t pfx_color_size(void);
 PfxColor *pfx_color_new(void);
 void pfx_color_free(PfxColor *color);

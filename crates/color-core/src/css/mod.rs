@@ -288,10 +288,10 @@ fn with_alpha(body: String, alpha: f64) -> String {
 /// Format numeric colors as CSS absolute values, without silent gamut mapping.
 /// The output uses sufficient decimal precision to round-trip its f64 channels.
 /// CSS missing-component semantics are not representable in the numeric Color.
-pub fn format_css(input: Color) -> String {
+pub fn format_css(input: Color) -> Result<String, ColorError> {
     let [a, b, c] = input.channels();
     let alpha = input.alpha();
-    match input.space() {
+    Ok(match input.space() {
         ColorSpace::Srgb => format!("rgb({})", with_alpha(format!("{} {} {}", a * 255.0, b * 255.0, c * 255.0), alpha)),
         ColorSpace::Hsl => format!("hsl({})", with_alpha(format!("{a} {b}% {c}%"), alpha)),
         ColorSpace::Hwb => format!("hwb({})", with_alpha(format!("{a} {b}% {c}%"), alpha)),
@@ -308,11 +308,11 @@ pub fn format_css(input: Color) -> String {
                 ColorSpace::XyzD50 => "xyz-d50",
                 // Nonstandard color spaces are converted to sRGB before
                 // serialization, not claimed to have a CSS color() id.
-                _ => return format_css(input.to(ColorSpace::Srgb).expect("finite conversion")),
+                _ => return format_css(input.to(ColorSpace::Srgb)?),
             };
             format!("color({name} {})", with_alpha(format!("{a} {b} {c}"), alpha))
         }
-    }
+    })
 }
 
 /// Encode hex with explicit gamut mapping policy. Opaque is 6 hex digits,

@@ -13,7 +13,7 @@ use pfx_color_core::{
     contrast_ratio, difference, generate_harmony, interpolate, is_in_gamut, map_to_gamut,
     ramp_palette, relative_luminance, tonal_palette, Color, ColorSpace, DifferenceMethod, GamutMap,
     Gradient, GradientKind, GradientOptions, GradientStop, HarmonyOptions, HarmonyScheme,
-    HueMethod, Palette, RampOptions, TonalOptions,
+    HueMethod, Palette, RampOptions, TonalOptions, format_css, format_hex, parse_css,
 };
 
 const NULL: i32 = -1;
@@ -59,6 +59,9 @@ fn space(code: u32) -> Result<ColorSpace, i32> {
         9 => Ok(ColorSpace::Lch),
         10 => Ok(ColorSpace::Oklab),
         11 => Ok(ColorSpace::Oklch),
+        12 => Ok(ColorSpace::Hsl),
+        13 => Ok(ColorSpace::Hwb),
+        14 => Ok(ColorSpace::Hsv),
         _ => Err(ENUM),
     }
 }
@@ -123,6 +126,9 @@ fn to_wire(color: Color) -> PfxColor {
         ColorSpace::Lch => 9,
         ColorSpace::Oklab => 10,
         ColorSpace::Oklch => 11,
+        ColorSpace::Hsl => 12,
+        ColorSpace::Hwb => 13,
+        ColorSpace::Hsv => 14,
     };
     PfxColor {
         space,
@@ -651,19 +657,117 @@ pub unsafe extern "C" fn pfx_gradient_free(ptr: *mut PfxGradient) {
     }
 }
 
+
+/// Allocate a byte buffer owned by Rust for input/output across the WASM ABI.
+/// The caller MUST release it with pfx_buffer_free(ptr, SAME_SIZE).
+/// Returns null for zero, oversized or invalid size.
+#[no_mangle]
+pub extern "C" fn pfx_buffer_new(length: u32) -> *mut u8 {
+    if length == 0 || length > 2048 {
+        return std::ptr::null_mut();
+    }
+    Box::into_raw(vec![0_u8; length as usize].into_boxed_slice()) as *mut u8
+}
+
+/// # Safety
+/// ptr must be null, or an alive buffer from pfx_buffer_new(length), with
+/// exactly the original length. Never free twice.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_buffer_free(ptr: *mut u8, length: u32) {
+    if !ptr.is_null() {
+        if length == 0 || length > 2048 {
+            return;
+        }
+        drop(Box::from_raw(std::ptr::slice_from_raw_parts_mut(ptr, length as usize)));
+    }
+}
+
+/// Parse a UTF-8 absolute CSS color supported by the standalone Rust core.
+/// Returns 0 on success; negative on error, without writing to output.
+/// # Safety
+/// data must be a live, readable byte pointer to length bytes.
+/// out must be a live, writable PfxColor pointer.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_css_parse(
+    data: *const u8,
+    length: u32,
+    out: *mut PfxColor,
+) -> i32 {
+    if data.is_null() || out.is_null() {
+        return NULL;
+    }
+    if length == 0 || length as usize > pfx_color_core::css::MAX_CSS_INPUT {
+        return COLOR;
+    }
+    let bytes = std::slice::from_raw_parts(data, length as usize);
+    let result = std::str::from_utf8(bytes)
+        .map_err(|_| COLOR)
+        .and_then(|css| parse_css(css).map_err(|_| COLOR));
+    finish_color(result, out)
+}
+
+/// Encode CSS text or 8-bit hex into a caller-owned UTF-8 buffer.
+/// Format 0=CSS coordinates (never maps gamut), 1=hex (explicit map method).
+/// On success, returns byte count EXCLUDING trailing NUL (a nonnegative i32).
+/// Buffer MUST have at least the returned count + 1 bytes.
+/// Returns -5 if capacity is inadequate, -1 on null, -3 on invalid input.
+/// No truncation is performed.
+/// # Safety
+/// color must be a live PfxColor pointer; buffer must be writable for
+/// capacity bytes and must not overlap the input PfxColor memory.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_css_format(
+    color: *const PfxColor,
+    format_kind: u32,
+    gamut_method_id: u32,
+    buffer: *mut u8,
+    capacity: u32,
+) -> i32 {
+    if color.is_null() || buffer.is_null() {
+        return NULL;
+    }
+    let color = match read(color) {
+        Ok(c) => c,
+        Err(e) => return e,
+    };
+    let output = match format_kind {
+        0 => match format_css(color) {
+            Ok(s) => s,
+            Err(_) => return COLOR,
+        },
+        1 => {
+            let method = match gamut_method(gamut_method_id) {
+                Ok(m) => m,
+                Err(e) => return e,
+            };
+            match format_hex(color, method) {
+                Ok(s) => s,
+                Err(_) => return COLOR,
+            }
+        }
+        _ => return ENUM,
+    };
+    if output.len() >= capacity as usize {
+        return -5;
+    }
+    std::ptr::copy_nonoverlapping(output.as_ptr(), buffer, output.len());
+    *buffer.add(output.len()) = 0;
+    output.len() as i32
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn all_color_space_codes_are_reversible() {
-        for code in 0..12 {
+        for code in 0..15 {
             let kind = space(code).unwrap();
             let c = Color::new(kind, [0.5, 0.25, 0.8], 0.5).unwrap();
             assert_eq!(to_wire(c).space, code);
             assert_eq!(from_wire(to_wire(c)).unwrap(), c);
         }
-        assert_eq!(space(12), Err(ENUM));
+        assert_eq!(space(15), Err(ENUM));
     }
 
     #[test]

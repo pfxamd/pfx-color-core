@@ -16,6 +16,16 @@ int main(void) {
     PfxColor white = { PFX_SRGB, 0, {1.0, 1.0, 1.0}, 1.0 };
     PfxColor green = { PFX_DISPLAY_P3, 0, {0.0, 1.0, 0.0}, 1.0 };
     PfxColor out = {0};
+    const char css[] = "hsl(120 100% 50% / 50%)";
+    char hexbuf[64] = {0};
+    CHECK(pfx_css_parse((const uint8_t*)css, (uint32_t)(sizeof(css) - 1), &out) == 0);
+    CHECK(out.space == PFX_HSL);
+    CHECK(fabs(out.alpha - 0.5) < 1e-12);
+    CHECK(pfx_css_format(&out, 1, PFX_GAMUT_CLIP, (uint8_t*)hexbuf, sizeof(hexbuf)) == 9);
+    CHECK(hexbuf[0] == '#');
+    CHECK(pfx_color_convert(&out, PFX_SRGB, &out) == 0);
+    CHECK(fabs(out.channels[1] - 1.0) < 1e-10);
+
 
     CHECK(fabs(pfx_color_contrast(&black, &white) - 21.0) < 1e-12);
     CHECK(fabs(pfx_color_difference(&black, &white, PFX_DELTA_E_OK) - 1.0) < 1e-7);

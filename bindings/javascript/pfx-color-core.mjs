@@ -7,7 +7,7 @@
 export const ColorSpaces = Object.freeze({
   srgb: 0, "srgb-linear": 1, "display-p3": 2, "display-p3-linear": 3,
   rec2020: 4, "rec2020-linear": 5, "xyz-d65": 6, "xyz-d50": 7,
-  lab: 8, lch: 9, oklab: 10, oklch: 11,
+  lab: 8, lch: 9, oklab: 10, oklch: 11, hsl: 12, hwb: 13, hsv: 14,
 });
 const SpaceNames = Object.freeze(Object.keys(ColorSpaces));
 const DifferenceMethods = Object.freeze({ cie76: 0, ciede2000: 1, ok: 2 });
@@ -64,7 +64,7 @@ export async function createPfxColorCore(wasm) {
   const loaded = await WebAssembly.instantiate(wasm, {});
   const instance = loaded instanceof WebAssembly.Instance ? loaded : loaded.instance;
   const e = instance.exports;
-  if (e.pfx_abi_version?.() !== 1 || e.pfx_color_size?.() !== 40) {
+  if (e.pfx_abi_version?.() !== 1 || e.pfx_color_size?.() !== 40 || !e.memory || !e.pfx_css_parse || !e.pfx_css_format) {
     throw new Error("Unsupported PFx Color Core WASM ABI; expected revision 1");
   }
 
@@ -131,7 +131,45 @@ export async function createPfxColorCore(wasm) {
     hue: code(HueMethods, opts.hue ?? "shorter", "hue method"),
   });
 
+  const textEncoder = new TextEncoder();
+  const textDecoder = new TextDecoder("utf-8", { fatal: true });
+  const utf8With = (bytes, callback) => {
+    if (bytes.length === 0 || bytes.length > 1024) {
+      throw new RangeError("CSS input must contain 1..1024 UTF-8 bytes");
+    }
+    const ptr = e.pfx_buffer_new(bytes.length);
+    if (!ptr) throw new Error("Unable to allocate Rust UTF-8 buffer");
+    try {
+      new Uint8Array(e.memory.buffer, ptr, bytes.length).set(bytes);
+      return callback(ptr, bytes.length);
+    } finally {
+      e.pfx_buffer_free(ptr, bytes.length);
+    }
+  };
+  const formatText = (color, kind, mapping) => colorWith(color, (ptr) => {
+    const length = 512;
+    const out = e.pfx_buffer_new(length);
+    if (!out) throw new Error("Unable to allocate Rust string buffer");
+    try {
+      const written = e.pfx_css_format(ptr, kind, mapping, out, length);
+      if (written < 0) status(written, "CSS format");
+      return textDecoder.decode(new Uint8Array(e.memory.buffer, out, written));
+    } finally {
+      e.pfx_buffer_free(out, length);
+    }
+  });
   return Object.freeze({
+    parseCss(source) {
+      if (typeof source !== "string") throw new TypeError("CSS source must be a string");
+      return utf8With(textEncoder.encode(source), (ptr, length) =>
+        outputWith((out) => status(e.pfx_css_parse(ptr, length, out), "CSS parse")));
+    },
+    formatCss(color) {
+      return formatText(color, 0, 0);
+    },
+    formatHex(color, method = "clip") {
+      return formatText(color, 1, code(GamutMethods, method, "gamut method"));
+    },
     convert(color, target) {
       return colorWith(color, (input) => outputWith((out) =>
         status(e.pfx_color_convert(input, code(ColorSpaces, target, "target space"), out), "conversion")));
