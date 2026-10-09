@@ -159,7 +159,83 @@ export async function createPfxColorCore(wasm) {
       e.pfx_buffer_free(out, length);
     }
   });
+
+  // Separate lossless CSS value transport. The legacy numeric ABI stays 40 bytes.
+  // Mask bits: R/L/H channel 0=1, channel 1=2, channel 2=4, alpha=8.
+  const cssNew = () => {
+    const ptr = e.pfx_css_missing_color_new?.();
+    if (!ptr) throw new Error("WASM engine does not expose CSS missing-component ABI");
+    return ptr;
+  };
+  const cssRead = (ptr) => {
+    const id = e.pfx_css_missing_color_get_space(ptr);
+    if (id >= SpaceNames.length) throw new Error("Invalid CSS color space");
+    return {
+      space: SpaceNames[id],
+      channels: [0, 1, 2].map(i => scalar(e.pfx_css_missing_color_get_channel(ptr, i), "CSS channel")),
+      alpha: scalar(e.pfx_css_missing_color_get_alpha(ptr), "CSS alpha"),
+      missingMask: e.pfx_css_missing_color_get_mask(ptr),
+    };
+  };
+  const cssWith = (value, callback) => {
+    const v = normalized(value);
+    const mask = value.missingMask ?? 0;
+    if (!Number.isInteger(mask) || mask < 0 || mask > 15) {
+      throw new RangeError("CSS missing mask must be an integer from 0 to 15");
+    }
+    const ptr = cssNew();
+    try {
+      status(e.pfx_css_missing_color_set(ptr, v.space, ...v.channels, v.alpha, mask), "set CSS color");
+      return callback(ptr);
+    } finally {
+      e.pfx_css_missing_color_free(ptr);
+    }
+  };
+  const cssOutput = callback => {
+    const ptr = cssNew();
+    try {
+      callback(ptr);
+      return cssRead(ptr);
+    } finally {
+      e.pfx_css_missing_color_free(ptr);
+    }
+  };
+  const cssString = value => cssWith(value, ptr => {
+    const capacity = 512;
+    const output = e.pfx_buffer_new(capacity);
+    if (!output) throw new Error("Unable to allocate CSS output");
+    try {
+      const written = e.pfx_css_missing_color_format(ptr, output, capacity);
+      if (written < 0) status(written, "format missing CSS");
+      return textDecoder.decode(new Uint8Array(e.memory.buffer, output, written));
+    } finally {
+      e.pfx_buffer_free(output, capacity);
+    }
+  });
+
   return Object.freeze({
+
+    /** Lossless absolute CSS Color 4 subset with explicit none components. */
+    parseCssMissing(source) {
+      if (typeof source !== "string") throw new TypeError("CSS source must be a string");
+      return utf8With(textEncoder.encode(source), (ptr, length) =>
+        cssOutput(out => status(e.pfx_css_missing_color_parse(ptr, length, out), "parse missing CSS")));
+    },
+    formatCssMissing(value) {
+      return cssString(value);
+    },
+    /** Ordinary conversion consumes none as zero and clears the missing mask. */
+    convertCssMissing(value, target) {
+      return cssWith(value, ptr => cssOutput(out =>
+        status(e.pfx_css_missing_color_convert(ptr, code(ColorSpaces, target, "color space"), out), "convert CSS color")));
+    },
+    /** CSS interpolation carries analogous missing channels and borrows from the opposite endpoint. */
+    interpolateCssMissing(start, end, fraction, options = {}) {
+      const opts = mixDefaults(options);
+      return cssWith(start, pa => cssWith(end, pb => cssOutput(out =>
+        status(e.pfx_css_missing_color_interpolate(pa, pb, finite(fraction, "fraction"), opts.space, opts.hue, out),
+          "interpolate CSS color"))));
+    },
     parseCss(source) {
       if (typeof source !== "string") throw new TypeError("CSS source must be a string");
       return utf8With(textEncoder.encode(source), (ptr, length) =>
