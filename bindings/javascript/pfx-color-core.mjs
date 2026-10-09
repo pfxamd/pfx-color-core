@@ -183,10 +183,6 @@ export async function createPfxColorCore(wasm) {
     contrast(a, b) {
       return pairWith(a, b, (pa, pb) => scalar(e.pfx_color_contrast(pa, pb), "WCAG contrast"));
     },
-    apca(foreground, background) {
-      return pairWith(foreground, background, (fg, bg) =>
-        scalar(e.pfx_color_apca(fg, bg), "APCA-W3 contrast"));
-    },
     luminance(color) {
       return colorWith(color, (ptr) => scalar(e.pfx_color_luminance(ptr), "relative luminance"));
     },
