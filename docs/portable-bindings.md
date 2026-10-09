@@ -129,8 +129,7 @@ The deployed PFx Colors image-extraction feature is **unchanged**.
 
 The parser supports HEX, modern/legacy RGB and HSL, HWB, Lab, LCH, Oklab,
 Oklch, the supported color() spaces and all 148 standard named-color keywords.
-Its grammar is bounded to 1024 bytes. Invalid syntax, missing-channel none,
-calc(), var(), and relative color syntax are **rejected**, not approximated.
+The original numeric parser accepts up to 1024 bytes and deliberately rejects missing-channel `none`, `calc()`, `var()` and relative-color syntax. The **separate opt-in parser** below supports `none`, bounded typed `calc()` and literal-origin relative colors without changing the old numeric behavior.
 
 The C buffer API uses pfx_buffer_new and pfx_buffer_free to provide a safe
 owner-managed byte region for WebAssembly consumers. pfx_css_parse accepts
