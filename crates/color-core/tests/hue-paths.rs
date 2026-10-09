@@ -28,15 +28,15 @@ fn raw_hue_preserves_direct_path_in_oklch() {
 #[test]
 fn hsl_hwb_hsv_apply_hue_paths_without_premultiplication() {
     for space in [ColorSpace::Hsl, ColorSpace::Hwb, ColorSpace::Hsv] {
-        let from = c(space, [350.0, 40.0, 40.0], 0.2);
-        let to = c(space, [10.0, 70.0, 50.0], 0.8);
+        let from = c(space, [350.0, 20.0, 30.0], 0.2);
+        let to = c(space, [10.0, 25.0, 35.0], 0.8);
         let short = interpolate(from, to, 0.5, space, HueMethod::Shorter).unwrap();
         let raw = interpolate(from, to, 0.5, space, HueMethod::Raw).unwrap();
         near(short.channels()[0], 0.0);
         near(raw.channels()[0], 180.0);
         near(short.alpha(), 0.5);
         near(raw.alpha(), 0.5);
-        near(raw.channels()[1], 64.0);
+        near(raw.channels()[1], 24.0);
     }
 }
 #[test]
@@ -47,7 +47,12 @@ fn powerless_hue_uses_chromatic_endpoint_in_hsl_hwb_hsv() {
         (ColorSpace::Hwb, [290.0, 70.0, 40.0]),
     ] {
         let neutral = c(space, neutral, 1.0);
-        let color = c(space, [30.0, 60.0, 40.0], 1.0);
+        let chromatic = if space == ColorSpace::Hwb {
+            [30.0, 20.0, 40.0]
+        } else {
+            [30.0, 60.0, 40.0]
+        };
+        let color = c(space, chromatic, 1.0);
         let mixed = interpolate(neutral, color, 0.5, space, HueMethod::Shorter).unwrap();
         near(mixed.channels()[0], 30.0);
     }
