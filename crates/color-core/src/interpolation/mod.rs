@@ -14,9 +14,14 @@ pub enum HueMethod {
     Longer,
     Increasing,
     Decreasing,
+    /// Direct interpolation of hue coordinates without circular adjustment.
+    Raw,
 }
 
 fn hue_delta(mut from: f64, mut to: f64, method: HueMethod) -> f64 {
+    if method == HueMethod::Raw {
+        return to - from;
+    }
     from = from.rem_euclid(360.0);
     to = to.rem_euclid(360.0);
     let mut delta = to - from;
@@ -37,6 +42,7 @@ fn hue_delta(mut from: f64, mut to: f64, method: HueMethod) -> f64 {
         }
         HueMethod::Increasing => delta = delta.rem_euclid(360.0),
         HueMethod::Decreasing => delta = -(-delta).rem_euclid(360.0),
+        HueMethod::Raw => unreachable!("handled above"),
     }
     delta
 }
@@ -68,19 +74,27 @@ pub fn interpolate(
     }
     let mut a = from.channels();
     let mut b = to.channels();
-    let polar = matches!(space, ColorSpace::Lch | ColorSpace::Oklch);
-    if polar {
-        // CSS powerless-hue cutoffs, scaled to the lightness range.
-        let epsilon = if space == ColorSpace::Oklch {
-            4e-6
-        } else {
-            4e-4
+    // The hue channel is the third coordinate in LCH and the first
+    // coordinate in HSL, HWB and HSV.
+    let hue_index = match space {
+        ColorSpace::Lch | ColorSpace::Oklch => Some(2),
+        ColorSpace::Hsl | ColorSpace::Hwb | ColorSpace::Hsv => Some(0),
+        _ => None,
+    };
+    if let Some(index) = hue_index {
+        let powerless = |channels: [f64; 3]| match space {
+            ColorSpace::Oklch => channels[1].abs() < 4e-6,
+            ColorSpace::Lch => channels[1].abs() < 4e-4,
+            ColorSpace::Hsl | ColorSpace::Hsv => channels[1].abs() < 1e-9,
+            ColorSpace::Hwb => channels[1] + channels[2] >= 100.0 - 1e-9,
+            _ => false,
         };
-        if a[1].abs() < epsilon || from.alpha() == 0.0 {
-            a[2] = b[2];
-        }
-        if b[1].abs() < epsilon || to.alpha() == 0.0 {
-            b[2] = a[2];
+        let missing_a = powerless(a) || from.alpha() == 0.0;
+        let missing_b = powerless(b) || to.alpha() == 0.0;
+        if missing_a && !missing_b {
+            a[index] = b[index];
+        } else if missing_b && !missing_a {
+            b[index] = a[index];
         }
     }
     let weight_a = (1.0 - fraction) * from.alpha();
@@ -88,8 +102,13 @@ pub fn interpolate(
     let alpha = weight_a + weight_b;
     let mut mixed = [0.0; 3];
     for i in 0..3 {
-        if polar && i == 2 {
-            mixed[i] = (a[i] + hue_delta(a[i], b[i], hue_method) * fraction).rem_euclid(360.0);
+        if hue_index == Some(i) {
+            let angle = a[i] + hue_delta(a[i], b[i], hue_method) * fraction;
+            mixed[i] = if hue_method == HueMethod::Raw {
+                angle
+            } else {
+                angle.rem_euclid(360.0)
+            };
         } else {
             let numerator = a[i] * weight_a + b[i] * weight_b;
             mixed[i] = if alpha == 0.0 {
