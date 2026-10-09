@@ -156,3 +156,7 @@ Regression tests compare the bridge against the real TypeScript implementation, 
 ## Opt-in workspace state and history
 
 An optional first-party workspace orchestration layer lives in `bindings/javascript/pfx-color-workspace.mjs`. `createPfxColorsWorkspace(core, initialColor, historyLimit)` returns methods corresponding to the current UI workspace (`getState`, `setColor`, `generateTonalPalette`, `generateRampPalette`, `generateHarmony`, `generatePaletteFromHarmony`, `createGradient`, `createGradientFromPalette`, `createGradientFromHarmony`, `setColorFromPalette`, `setColorFromHarmony`, `setColorFromGradient`, `undo`, `redo`, `clearHistory`). Numeric color calculations and parsing are delegated to Rust WASM. History is copied and managed in JavaScript; states are independent snapshots. The module is not imported by the production website. CSS gradient string serialization, CSS missing channels, advanced color spaces, full browser parity and image extraction remain separate work.
+
+## Browser verification
+
+The separate `Rust WASM Browser Compatibility` CI workflow compiles the first-party Rust library to `wasm32-unknown-unknown` and runs `scripts/browser-wasm-smoke.mjs` using Chromium and Firefox at 1440×900 and 390×844 viewports. Playwright is installed only for GitHub Actions testing. It is **not** bundled with the WebAssembly module, runtime JavaScript bindings or existing PFx Colors website. This exercise verifies the standalone and opt-in runtime, not yet the production React UI.

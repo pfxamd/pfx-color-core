@@ -65,3 +65,7 @@ WCAG coefficients: Rust implements WCAG 2.2 specified sRGB luminance coefficient
 
 These are smoke/regression gates, not a substitute for official numerical
 reference datasets, browser testing or a full format parser conformance suite.
+
+## Browser runtime gate
+
+A separate first-party test script, `scripts/browser-wasm-smoke.mjs`, executes the **real compiled Rust WebAssembly** in headless Chromium and Firefox at desktop and mobile viewport sizes. It checks color parsing, conversion, alpha-aware mixing, anchored palettes, custom harmonies, deterministic Color Study, picker channel editing, workspace history, and CSS gradient string formatting. The `Rust WASM Browser Compatibility` workflow installs Playwright **only as CI test infrastructure**, never as a dependency of the Rust engine or its browser-facing runtime. This test does not exercise the deployed React application or imply full CSS Color 4 conformance.

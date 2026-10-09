@@ -1,71 +1,45 @@
-# PFx Color Core / Rust
+# PFx Color Core — Rust computation engine
 
-A portable, first-party color science implementation in Rust with **zero external Cargo dependencies**. The Rust implementation is developed alongside the TypeScript v0.1.0 baseline; the deployed PFx Colors UI remains unchanged.
+First-party color mathematics, design tools and portable interfaces, with **zero external Cargo dependencies**.
 
-## Implemented
+## Core support
 
-- Encoded and linear sRGB, Display P3, CSS Rec.2020
-- CIE XYZ D65/D50 (Bradford adaptation), Lab/LCH, Oklab/OKLCH
-- Unclipped f64 conversions with finite numeric coordinates and explicit alpha
-- CIE76, CIEDE2000, Delta-E OK
-- WCAG 2.2 luminance and ratio for opaque, sRGB-in-gamut colors
-- Premultiplied-alpha interpolation, with four polar hue paths
-- Explicit gamut checks, clipping, Oklch chroma reduction, and W3C CSS Local MINDE
-- **Palettes:** tonal scales, two-anchor ramps and multiple-anchor ramps
-- **Harmonies:** analogous, complementary, split-complementary, triadic, tetradic, square, custom hue offsets
-- **Gradients:** ordered and duplicate-position hard stops, color-space interpolation, linear/radial/conic sampling in a normalized unit square
-- **Color Study:** first-party deterministic 10-swatch generator with an explicit 32-bit seed, matching the UI's seeded algorithm
-- HSL/HWB/HSV coordinate conversions, absolute CSS Color 4 parsing (including all 148 named colors), CSS coordinate serialization, explicit-gamut HEX output
-- Native Rust and wasm32-unknown-unknown compilation checks
+- sRGB, linear sRGB, Display P3, Rec.2020, XYZ D50/D65, CIE Lab/LCH, OKLab/OKLCH, HSL/HWB/HSV
+- CIE76, CIEDE2000, Delta-E OK and opaque sRGB WCAG contrast
+- Premultiplied-alpha interpolation, explicit gamut checking, clipping, Oklch chroma reduction, and CSS Local MINDE
+- Deterministic tonal/anchored/ramp palettes, named/custom harmonies, linear/radial/conic gradient sampling
+- Seeded 10-color Color Study for the existing UI's design controls
+- Absolute CSS color parsing/serialization, HEX (with explicit gamut mapping) and 148 named CSS colors
 
-## API example
+## Bindings and use
 
-```rust
-use pfx_color_core::{
-    Color, ColorSpace, TonalOptions, tonal_palette,
-    RampOptions, ramp_palette,
-    HarmonyScheme, HarmonyOptions, generate_harmony,
-    Gradient, GradientStop, GradientOptions
-};
+- The Rust engine in `crates/color-core/` exposes typed computational functions.
+- The `crates/color-ffi/` crate exposes the same engine through the versioned C ABI and WebAssembly.
+- The independent `bindings/javascript/pfx-color-core.mjs` module uses built-in browser WebAssembly APIs with no runtime packages.
+- The opt-in `pfx-color-tools.mjs` and `pfx-color-workspace.mjs` modules orchestrate picker/state/history behavior without duplicating color mathematics in JavaScript.
+- The deployed `pfx-colors` application and published TypeScript v0.1.0 package remain unchanged.
 
-fn main() -> Result<(), pfx_color_core::ColorError> {
-    let red = Color::new(ColorSpace::Srgb, [1.0, 0.0, 0.0], 1.0)?;
-    let blue = Color::new(ColorSpace::Srgb, [0.0, 0.0, 1.0], 1.0)?;
-    let tonal = tonal_palette(red, TonalOptions::default())?;
-    let ramp = ramp_palette(red, blue, RampOptions::default())?;
-    let harmony = generate_harmony(red, HarmonyScheme::Triadic, HarmonyOptions::default())?;
-    let gradient = Gradient::new(
-        &[
-            GradientStop { position: 0.0, color: red },
-            GradientStop { position: 1.0, color: blue }
-        ],
-        GradientOptions::default()
-    )?;
-    let midpoint = gradient.sample(0.5)?;
-    println!("{} {} {} {:?}", tonal.colors.len(), ramp.colors.len(), harmony.colors.len(), midpoint.color);
-    Ok(())
-}
-```
-
-## Design and safety boundaries
-
-- Palette and harmony generation is **deterministic**. Harmony schemes are angle conventions, not scientifically guaranteed aesthetically pleasing or accessible combinations.
-- Explicit RGB target-space gamut mapping; no conversion implicitly clips color channels.
-- Only numeric colors are supported. CSS parsing, missing channels (`none`) and complete CSS color-mix semantics are not yet implemented.
-- WCAG contrast refuses partially transparent or out-of-sRGB-gamut values; callers must explicitly handle backgrounds and gamut mapping.
-- Gradient spatial sampling has *documented unit-square geometry*, not pixel-perfect CSS box geometry. CSS serializing/rendering belongs in web bindings.
-- The Oklch chroma mapper is **not** the CSS Local-MINDE algorithm.
-- Image extraction, ICC profile support, browser JS glue, C ABI and application bindings are not yet implemented. Compiling a wasm32 target alone does not create a browser library.
-- Rust `v0.1.0` is a development crate version, not a released Rust API; existing GitHub tag `v0.1.0` refers to the original TypeScript release.
-
-## Verify
+## Validation
 
 ```sh
 cargo fmt --all -- --check
 cargo test --workspace --all-targets
 cargo clippy --workspace --all-targets -- -D warnings
-cargo build --workspace --release
-cargo build --workspace --target wasm32-unknown-unknown --release
+cargo build -p pfx-color-ffi --release
+cargo build -p pfx-color-ffi --target wasm32-unknown-unknown --release
+node --test bindings/javascript/pfx-color-core.smoke.mjs
 ```
 
-Sources: [W3C CSS Color 4](https://www.w3.org/TR/css-color-4/), [WCAG 2.2](https://www.w3.org/TR/WCAG22/) and [Sharma et al. CIEDE2000 data](https://hajim.rochester.edu/ece/sites/gsharma/ciede2000/).
+Further parity tests require building the TypeScript reference package. The repository's CI verifies the native C executable, WebAssembly under Node.js, real Rust-vs-TypeScript comparisons and an additional headless Chromium/Firefox run.
+
+## Explicitly unsupported or incomplete
+
+- Full CSS Color 4 grammar (notably missing `none` components, relative colors, `calc()`, `var()` and unimplemented spaces)
+- APCA, DeltaE ITP/Jz/HCT, and some specialized color spaces
+- Image extraction and ICC color profile management
+- Pixel-perfect CSS gradient layout for arbitrary boxes, and native production React UI integration
+- A public, stable Rust or FFI production release
+
+These unsupported inputs are rejected rather than silently reinterpreted. Numeric color conversions preserve extended ranges; gamut mapping is always requested explicitly.
+
+See [compatibility matrix](../../docs/color-parity.md), [portable bindings](../../docs/portable-bindings.md) and [W3C CSS Color 4](https://www.w3.org/TR/css-color-4/).

@@ -1,0 +1,30 @@
+name: Rust WASM Browser Compatibility
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build standalone first-party Rust WASM
+        run: cargo build -p pfx-color-ffi --target wasm32-unknown-unknown --release
+      - name: Install browser test runner (CI only)
+        run: npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.56.0
+      - name: Install Chromium and Firefox
+        run: npx playwright install --with-deps chromium firefox
+      - name: Test real browser runtime on desktop and mobile viewports
+        run: node scripts/browser-wasm-smoke.mjs
