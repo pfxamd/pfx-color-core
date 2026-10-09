@@ -23,7 +23,7 @@ pub mod palettes;
 pub mod spaces;
 pub mod study;
 
-pub use contrast::{contrast_ratio, relative_luminance};
+pub use contrast::{apca_contrast, contrast_ratio, relative_luminance};
 pub use conversion::convert;
 pub use css::{format_css, format_hex, parse_css};
 pub use difference::{difference, DifferenceMethod};
