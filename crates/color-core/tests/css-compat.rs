@@ -175,7 +175,7 @@ fn malformed_or_unsupported_css_is_rejected() {
         "color(srgb 1 var(--g) 0)",
         "color(from red srgb r g b)",
         "rgb(calc(20 + 5) 0 0)",
-        "color(prophoto-rgb 1 0 0)",
+        "color(prophoto-rgb none 0 0)",
         "hwb(10, 0%, 0%)",
         "rgb(NaN 0 0)",
         "rgb(inf 0 0)",
