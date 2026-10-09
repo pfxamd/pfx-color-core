@@ -367,3 +367,25 @@ test("Rust custom harmony agrees with existing hue-offset scheme", () => {
   }
 });
 
+
+test("Rust raw hue matches actual Color.js on HSL and Oklch numeric inputs", () => {
+  for (const space of ["hsl", "oklch"]) {
+    const start = space === "hsl"
+      ? { space, channels: [350, 100, 50], alpha: 0.25 }
+      : { space, channels: [0.65, 0.1, 350], alpha: 0.25 };
+    const end = space === "hsl"
+      ? { space, channels: [10, 100, 50], alpha: 0.75 }
+      : { space, channels: [0.65, 0.1, 10], alpha: 0.75 };
+    for (const fraction of [0.25, 0.5, 0.75]) {
+      const actual = rust.interpolate(start, end, fraction, { space, hue: "raw" });
+      const reference = legacy.interpolate(ts(start), ts(end), fraction, {
+        space, outputSpace: space, hue: "raw",
+      });
+      assert.ok(Math.abs(actual.alpha - reference.alpha) < 1e-10);
+      const hueIndex = space === "hsl" ? 0 : 2;
+      const hueError = Math.abs(actual.channels[hueIndex] - reference.coordinates[hueIndex]);
+      assert.ok(hueError < 1e-6,
+        space + " raw hue " + actual.channels[hueIndex] + " vs " + reference.coordinates[hueIndex]);
+    }
+  }
+});
