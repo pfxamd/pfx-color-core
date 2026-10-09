@@ -423,3 +423,44 @@ test("bulk RGBA8 gradient raster matches scalar Rust samples without leaking own
   }
   assert.throws(() => grad.rasterRGBA8(7, 5), /disposed/);
 });
+
+test("fast CSS preview raster stays close to exact for gamut, hard stops, alpha and repeated gradients", () => {
+  const fixtures = [
+    { stops: [
+        { position: 0, color: color("srgb", [1, 0, 0]) },
+        { position: 1, color: color("srgb", [0, 0, 1]) },
+      ], kind: "linear", angle: 37, space: "oklch", gamut: "css" },
+    { stops: [
+        { position: 0, color: color("srgb", [1, 0, 0], .1) },
+        { position: .5, color: color("display-p3", [.8, .9, 0], .55) },
+        { position: 1, color: color("srgb", [0, 0, 1], 1) },
+      ], kind: "radial", centerX: 20, centerY: 15,
+      radialShape: "ellipse", space: "oklch", gamut: "css" },
+    { stops: [
+        { position: 0, color: color("srgb", [0, .9, 0]) },
+        { position: .43, color: color("srgb", [1, 0, 0]) },
+        { position: .43, color: color("srgb", [0, 0, 1]) },
+        { position: 1, color: color("srgb", [1, 1, 0]) },
+      ], kind: "conic", centerX: 20, centerY: 15, space: "srgb", gamut: "clip" },
+    { stops: [
+        { position: .2, color: color("srgb", [1, 0, 0], .2) },
+        { position: .48, color: color("srgb", [0, 0, 1]) },
+      ], kind: "linear", angle: 90, repeating: true,
+      space: "srgb", gamut: "clip" },
+  ];
+  for (const {stops, ...options} of fixtures) {
+    const grad = api.createCssGradient(stops, { ...options, width: 40, height: 30, target: "srgb" });
+    try {
+      const exact = grad.rasterRGBA8(40, 30);
+      const preview = grad.rasterPreviewRGBA8(40, 30);
+      assert.equal(preview.length, exact.length);
+      let largest = 0;
+      for (let i = 0; i < exact.length; i++) {
+        largest = Math.max(largest, Math.abs(exact[i] - preview[i]));
+      }
+      assert.ok(largest <= 4, "fast preview max RGBA8 difference " + largest
+        + " for " + JSON.stringify({kind:options.kind,space:options.space}));
+      assert.throws(() => grad.rasterPreviewRGBA8(40, 29), /could not be generated/);
+    } finally { grad.dispose(); }
+  }
+});
