@@ -90,6 +90,8 @@ _Static_assert(offsetof(PfxColor, channels) == 8, "PFx v1 color ABI offsets chan
 #endif
 
 typedef struct PfxPalette PfxPalette;
+typedef struct PfxAnchors PfxAnchors;
+typedef struct PfxCustomHarmony PfxCustomHarmony;
 typedef struct PfxGradient PfxGradient;
 typedef struct PfxStudy PfxStudy;
 
@@ -138,6 +140,25 @@ PfxPalette *pfx_palette_harmony_new(
     const PfxColor *seed, uint32_t scheme, double analogous_angle,
     double split_angle, double tetradic_angle, uint32_t target, uint32_t gamut_method
 );
+/* Owned 2..256-anchor palette builder; no input-array pointer arithmetic
+   or copied foreign Rust-owned memory. Builders remain reusable after finish. */
+PfxAnchors *pfx_anchors_new(void);
+int32_t pfx_anchors_add(PfxAnchors *builder, const PfxColor *color);
+PfxPalette *pfx_anchors_palette(
+    const PfxAnchors *builder, uint32_t count,
+    uint32_t interpolation_space, uint32_t target,
+    uint32_t hue_method, uint32_t gamut_method
+);
+void pfx_anchors_free(PfxAnchors *builder);
+
+/* Custom 2..256 finite hue offsets in degrees. */
+PfxCustomHarmony *pfx_custom_harmony_new(
+    const PfxColor *seed, uint32_t target, uint32_t gamut_method
+);
+int32_t pfx_custom_harmony_add(PfxCustomHarmony *builder, double hue_offset);
+PfxPalette *pfx_custom_harmony_palette(const PfxCustomHarmony *builder);
+void pfx_custom_harmony_free(PfxCustomHarmony *builder);
+
 uint32_t pfx_palette_len(const PfxPalette *palette);
 int32_t pfx_palette_get(const PfxPalette *palette, uint32_t index, PfxColor *out);
 double pfx_palette_position(const PfxPalette *palette, uint32_t index);

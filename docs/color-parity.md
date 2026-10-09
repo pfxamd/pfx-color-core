@@ -35,7 +35,7 @@ in both implementations. Passing the gate does **not** imply parity elsewhere. W
 | CSS Local-MINDE gamut mapping | W3C binary search with local MINDE added and cross-checked | Parity uses perceptual tolerance; keep old UI until threshold cases pass |
 | CSS missing/none channel semantics, hue raw path | Missing | Keep TypeScript |
 | Full CSS-compatible gradient serialization/geometry | Missing: Rust normalized unit square | Keep TypeScript |
-| Arbitrary anchor palettes/custom harmony in WASM ABI | Rust core only; binding missing | Keep TypeScript |
+| Arbitrary anchored palettes/custom harmony in WASM ABI | Implemented in Rust, C ABI and WASM with owned builders | Eligible for parity checking; no production UI switch |
 | Seeded 10-color Color Study | Ported to Rust with first-party deterministic PRNG; seeded WASM-vs-TypeScript perceptual parity tests passed | Keep TypeScript app until browser/UI integration tests pass |
 | Color-picker selection, channel editing and normalized hex | Not implemented end-to-end | Keep TypeScript |
 | Workspace mutations and undo/redo | Not ported | Keep TypeScript |

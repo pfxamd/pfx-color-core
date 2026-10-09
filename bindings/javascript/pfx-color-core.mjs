@@ -204,6 +204,11 @@ export async function createPfxColorCore(wasm) {
         status(e.pfx_color_interpolate(pa, pb, finite(fraction, "fraction"),
           mix.space, mix.hue, out), "interpolation")));
     },
+    steps(a, b, count, options = {}) {
+      const total = validCount(count);
+      return Array.from({ length: total }, (_, index) =>
+        this.interpolate(a, b, index / (total - 1), options));
+    },
     colorStudy(seed, options = {}) {
       const target = code(ColorSpaces, options.target ?? "srgb", "target space");
       const mapping = code(GamutMethods, options.gamut ?? "css", "gamut method");
@@ -256,6 +261,54 @@ export async function createPfxColorCore(wasm) {
       return pairWith(a, b, (pa, pb) => paletteCollect(e.pfx_palette_ramp_new(
         pa, pb, validCount(options.count ?? 9), space, target, hue, mapping),
         "ramp palette"));
+    },
+    /**
+     * Deterministic palette of evenly spaced input anchors.
+     * Color interpolation and gamut mapping are computed in Rust.
+     */
+    anchoredPalette(anchors, options = {}) {
+      if (!Array.isArray(anchors) || anchors.length < 2 || anchors.length > 256) {
+        throw new RangeError("Anchor palette requires 2..256 colors");
+      }
+      const count = validCount(options.count ?? Math.max(9, anchors.length));
+      if (count < anchors.length) {
+        throw new RangeError("count cannot be smaller than anchor count");
+      }
+      const { target, mapping } = paletteDefaults(options);
+      const { space, hue } = mixDefaults(options);
+      const builder = e.pfx_anchors_new();
+      if (!builder) throw new Error("Unable to create anchor builder");
+      try {
+        for (const input of anchors) {
+          colorWith(input, (ptr) =>
+            status(e.pfx_anchors_add(builder, ptr), "add anchor"));
+        }
+        return paletteCollect(
+          e.pfx_anchors_palette(builder, count, space, target, hue, mapping),
+          "anchored palette",
+        );
+      } finally {
+        e.pfx_anchors_free(builder);
+      }
+    },
+    customHarmony(seed, offsets, options = {}) {
+      if (!Array.isArray(offsets) || offsets.length < 2 || offsets.length > 256) {
+        throw new RangeError("Custom harmony requires 2..256 hue offsets");
+      }
+      const { target, mapping } = paletteDefaults(options);
+      return colorWith(seed, (ptr) => {
+        const builder = e.pfx_custom_harmony_new(ptr, target, mapping);
+        if (!builder) throw new Error("Unable to create custom harmony");
+        try {
+          for (const offset of offsets) {
+            status(e.pfx_custom_harmony_add(builder, finite(offset, "hue offset")),
+              "add hue offset");
+          }
+          return paletteCollect(e.pfx_custom_harmony_palette(builder), "custom harmony");
+        } finally {
+          e.pfx_custom_harmony_free(builder);
+        }
+      });
     },
     harmony(seed, scheme, options = {}) {
       const { target, mapping } = paletteDefaults(options);

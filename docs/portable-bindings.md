@@ -30,13 +30,13 @@ The C ABI exposes:
 - CSS absolute color parsing (with supported syntax) and coordinate/hex formatting;
 - CIE76/CIEDE2000/OK differences, WCAG ratio and luminance;
 - interpolation, gamut check and mapping (clip, radial Oklch or W3C Local MINDE);
-- tonal and two-color ramp palettes;
-- six named harmony schemes;
+- tonal, two-color ramp, and arbitrary anchored palettes;
+- six named harmony schemes and custom hue offsets;
 - multi-stop gradient builders with normalized sample and sampleXY.
 
-The Rust core additionally exposes anchored palettes and arbitrary hue-offset
-harmonies. These two specialized functions have **not yet** been added to the
-foreign-language ABI.
+The C and WebAssembly interfaces also support arbitrary anchored palettes and
+custom hue-offset harmonies through opaque builders. Each builder has an
+explicit destructor and owns its copied input data.
 
 A native C executable is compiled and linked against the real Rust library in
 GitHub CI, using bindings/c/smoke.c. The ABI uses status codes; numeric scalar

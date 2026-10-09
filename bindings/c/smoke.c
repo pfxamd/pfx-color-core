@@ -76,6 +76,36 @@ int main(void) {
     CHECK(fabs(pfx_palette_hue_offset(harmony, 1) - 120.0) < 1e-12);
     pfx_palette_free(harmony);
 
+
+    PfxAnchors *anchors = pfx_anchors_new();
+    CHECK(anchors != NULL);
+    CHECK(pfx_anchors_add(anchors, &black) == 0);
+    CHECK(pfx_anchors_add(anchors, &white) == 0);
+    CHECK(pfx_anchors_add(anchors, &black) == 0);
+    PfxPalette *multi = pfx_anchors_palette(
+        anchors, 5, PFX_SRGB, PFX_SRGB, PFX_HUE_SHORTER, PFX_GAMUT_CLIP
+    );
+    CHECK(multi != NULL);
+    CHECK(pfx_palette_len(multi) == 5);
+    CHECK(pfx_palette_get(multi, 2, &out) == 0);
+    CHECK(fabs(out.channels[0] - 1.0) < 1e-12);
+    pfx_palette_free(multi);
+    pfx_anchors_free(anchors);
+
+    PfxCustomHarmony *custom = pfx_custom_harmony_new(
+        &green, PFX_SRGB, PFX_GAMUT_OKLCH_CHROMA
+    );
+    CHECK(custom != NULL);
+    CHECK(pfx_custom_harmony_add(custom, -45.0) == 0);
+    CHECK(pfx_custom_harmony_add(custom, 60.0) == 0);
+    PfxPalette *custom_colors = pfx_custom_harmony_palette(custom);
+    CHECK(custom_colors != NULL);
+    CHECK(pfx_palette_len(custom_colors) == 2);
+    CHECK(fabs(pfx_palette_hue_offset(custom_colors, 0) + 45.0) < 1e-12);
+    CHECK(fabs(pfx_palette_hue_offset(custom_colors, 1) - 60.0) < 1e-12);
+    pfx_palette_free(custom_colors);
+    pfx_custom_harmony_free(custom);
+
     PfxGradient *gradient = pfx_gradient_new(
         PFX_GRADIENT_LINEAR, 90.0, 0.5, 0.5,
         PFX_SRGB, PFX_SRGB, PFX_HUE_SHORTER, PFX_GAMUT_CLIP

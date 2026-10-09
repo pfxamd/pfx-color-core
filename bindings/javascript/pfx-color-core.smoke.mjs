@@ -185,3 +185,36 @@ test("HSL/HWB/HSV in-gamut checks use sRGB, including wide-gamut input", () => {
     assert.equal(api.isInGamut(mapped, target), true);
   }
 });
+
+test("WASM anchoredPalette preserves custom middle anchor and metadata", () => {
+  const red = color("srgb", [1, 0, 0]);
+  const green = color("srgb", [0, 1, 0]);
+  const blue = color("srgb", [0, 0, 1]);
+  const palette = api.anchoredPalette([red, green, blue], {
+    count: 5, space: "srgb", gamut: "clip",
+  });
+  assert.equal(palette.length, 5);
+  assert.deepEqual(palette[2].color.channels, green.channels);
+  assert.equal(palette[2].position, 0.5);
+  assert.deepEqual(palette[0].color.channels, red.channels);
+  assert.deepEqual(palette[4].color.channels, blue.channels);
+  const stepped = api.steps(red, blue, 3, { space: "srgb" });
+  assert.deepEqual(stepped[1].channels, [0.5, 0, 0.5]);
+  assert.throws(() => api.anchoredPalette([red], { count: 5 }), /2..256/);
+  assert.throws(() => api.anchoredPalette([red, green, blue], { count: 2 }), /count/);
+});
+
+test("WASM customHarmony handles arbitrary hue offsets without dependencies", () => {
+  const seed = color("oklch", [0.6, 0.06, 350], 0.7);
+  const output = api.customHarmony(seed, [-45, 0, 90], { target: "oklch" });
+  assert.equal(output.length, 3);
+  assert.deepEqual(output.map(entry => entry.hueOffset), [-45, 0, 90]);
+  const expected = [305, 350, 80];
+  output.forEach((entry, i) => {
+    assert.ok(Math.abs(entry.color.channels[2] - expected[i]) < 1e-12);
+    assert.equal(entry.color.alpha, 0.7);
+    assert.equal(entry.mapped, false);
+  });
+  assert.throws(() => api.customHarmony(seed, [20]), /2..256/);
+  assert.throws(() => api.customHarmony(seed, [0, Number.NaN]), /finite/);
+});
