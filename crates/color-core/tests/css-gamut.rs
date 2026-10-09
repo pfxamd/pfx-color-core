@@ -61,3 +61,20 @@ fn css_mapping_returns_extremes_for_out_of_range_lightness() {
         [1.0; 3]
     );
 }
+
+
+#[test]
+fn cylindrical_ui_spaces_use_srgb_gamut_boundaries() {
+    let p3_green = Color::new(
+        ColorSpace::DisplayP3,
+        [0.0, 1.0, 0.0],
+        0.7,
+    ).unwrap();
+    for target in [ColorSpace::Hsl, ColorSpace::Hwb, ColorSpace::Hsv] {
+        assert!(!is_in_gamut(p3_green, target).unwrap());
+        let mapped = map_to_gamut(p3_green, target, GamutMap::Css).unwrap();
+        assert_eq!(mapped.space(), target);
+        assert_eq!(mapped.alpha(), 0.7);
+        assert!(is_in_gamut(mapped, target).unwrap());
+    }
+}
