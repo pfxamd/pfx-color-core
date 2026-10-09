@@ -472,7 +472,6 @@ pub unsafe extern "C" fn pfx_palette_harmony_new(
     }
 }
 
-
 fn wrap_harmony(value: Harmony) -> *mut PfxPalette {
     Box::into_raw(Box::new(PfxPalette {
         values: value
@@ -497,9 +496,7 @@ pub struct PfxAnchors {
 /// Create an empty owned anchor builder. Add 2..=256 anchors before building.
 #[no_mangle]
 pub extern "C" fn pfx_anchors_new() -> *mut PfxAnchors {
-    Box::into_raw(Box::new(PfxAnchors {
-        colors: Vec::new(),
-    }))
+    Box::into_raw(Box::new(PfxAnchors { colors: Vec::new() }))
 }
 
 /// Push an anchor. 0 success; negative status for null or invalid input.
@@ -508,10 +505,7 @@ pub extern "C" fn pfx_anchors_new() -> *mut PfxAnchors {
 /// builder must point to a live PfxAnchors from pfx_anchors_new;
 /// color must point to a readable, live and aligned PfxColor.
 #[no_mangle]
-pub unsafe extern "C" fn pfx_anchors_add(
-    builder: *mut PfxAnchors,
-    color: *const PfxColor,
-) -> i32 {
+pub unsafe extern "C" fn pfx_anchors_add(builder: *mut PfxAnchors, color: *const PfxColor) -> i32 {
     let result = (|| {
         let value = read(color)?;
         let builder = builder.as_mut().ok_or(NULL)?;
