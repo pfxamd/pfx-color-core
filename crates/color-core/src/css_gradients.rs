@@ -6,7 +6,7 @@ use crate::gamut::GamutMap;
 use crate::gradients::{GradientSample, GradientStop};
 use crate::interpolation::{interpolate, HueMethod};
 use crate::palettes::{mapped_output, MAX_PALETTE_COLORS};
-use crate::spaces::{ColorError, ColorSpace};
+use crate::spaces::{Color, ColorError, ColorSpace};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CssRadialShape {
@@ -257,6 +257,36 @@ impl CssGradient {
         })
     }
 
+    /// CSS Images 3 defines a zero-period repeating gradient as the solid
+    /// premultiplied sRGBA average of equally spaced stops, not the last stop.
+    fn degenerate_average(&self, position: f64) -> Result<GradientSample, ColorError> {
+        let n = self.stops.len();
+        let unit = 1.0 / (2.0 * (n - 1) as f64);
+        let mut weighted_rgb = [0.0; 3];
+        let mut weighted_alpha = 0.0;
+        for (index, stop) in self.stops.iter().enumerate() {
+            let weight = if index == 0 || index + 1 == n { unit } else { unit * 2.0 };
+            let color = stop.color.to(ColorSpace::Srgb)?;
+            let alpha = color.alpha() * weight;
+            weighted_alpha += alpha;
+            for (channel, component) in weighted_rgb.iter_mut().zip(color.channels()) {
+                *channel += component * alpha;
+            }
+        }
+        if weighted_alpha > 0.0 {
+            for channel in &mut weighted_rgb {
+                *channel /= weighted_alpha;
+            }
+        }
+        let average = Color::new(
+            ColorSpace::Srgb, weighted_rgb, weighted_alpha.clamp(0.0, 1.0),
+        )?;
+        let (color, mapped) = mapped_output(
+            average, self.options.target_space, self.options.gamut_map,
+        )?;
+        Ok(GradientSample { position, color, mapped })
+    }
+
     /// The logical, unbounded line coordinate; outside end stops extends solid
     /// colors unless repeating is enabled. Repeating uses the first-last span.
     pub fn sample_progress(&self, position: f64) -> Result<GradientSample, ColorError> {
@@ -268,9 +298,7 @@ impl CssGradient {
         let p = if self.options.repeating {
             let span = last - first;
             if span == 0.0 {
-                // A zero-length repeat is degenerate: no periodic interval.
-                // The last stop is used instead of dividing by zero.
-                return self.emit(self.stops.len() - 1, position);
+                return self.degenerate_average(position);
             }
             let folded = (position - first).rem_euclid(span) + first;
             if !folded.is_finite() {
