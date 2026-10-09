@@ -177,6 +177,12 @@ try {
               kind: "linear", angle: 90, repeating: true,
               stops: [0.2, 0.4], positions: [[36, 45], [64, 45], [113, 55], [172, 60]],
             },
+            {
+              name: "degenerate repeating average",
+              css: "repeating-linear-gradient(90deg in srgb, #ff0000 40%, #0000ff 40%)",
+              kind: "linear", angle: 90, repeating: true,
+              stops: [0.4, 0.4], positions: [[20, 40], [120, 60], [200, 80]],
+            },
           ];
           for (const fixture of fixtures) {
             const { supported } = await page.evaluate(css => {
