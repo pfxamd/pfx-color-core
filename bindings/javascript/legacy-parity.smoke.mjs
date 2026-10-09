@@ -42,6 +42,9 @@ const epsilon = {
   lch: 0.06,
   oklab: 0.0005,
   oklch: 0.0005,
+  hsl: 0.005,
+  hwb: 0.005,
+  hsv: 0.005,
 };
 
 function compare(actual, expected, space, label) {
@@ -222,5 +225,38 @@ test("multi-stop gradient samples agree in shared, in-gamut rectangular space", 
     }
   } finally {
     rustGradient.dispose();
+  }
+});
+
+
+test("CSS absolute colors parsed by Rust agree with the legacy adapter", () => {
+  const inputs = [
+    "#336699", "#ff7a0066", "#f06", "transparent",
+    "rgb(255 0 0 / 50%)", "rgba(20, 70, 140, 0.4)",
+    "hsl(140 55% 45%)", "hsla(20, 65%, 37%, .8)",
+    "hwb(250 15% 20% / .9)",
+    "lab(65% 20 -35)", "lch(65% 35 220)",
+    "oklab(55% .08 -.04)", "oklch(64% .11 200 / .8)",
+    "color(display-p3 0.2 0.4 0.6 / .6)",
+  ];
+  for (const css of inputs) {
+    const result = rust.parseCss(css);
+    const old = legacy.parse(css);
+    const resultSpace = result.space;
+    if (css === "transparent") {
+      assert.equal(result.alpha, 0);
+      assert.equal(old.alpha, 0);
+      continue;
+    }
+    compare(result, old, resultSpace, css);
+  }
+});
+
+test("HSL, HSV and HWB numeric conversions agree with legacy color models", () => {
+  const seeds = [srgb([0.2, 0.4, 0.6]), srgb([0.8, 0.3, 0.15])];
+  for (const seed of seeds) {
+    for (const target of ["hsl", "hsv", "hwb"]) {
+      compare(rust.convert(seed, target), legacy.convert(ts(seed), target), target, "UI space " + target);
+    }
   }
 });
