@@ -1053,7 +1053,7 @@ mod tests {
             assert_eq!(to_wire(c).space, code);
             assert_eq!(from_wire(to_wire(c)).unwrap(), c);
         }
-        assert_eq!(space(15), Err(ENUM));
+        assert_eq!(space(17), Err(ENUM));
     }
 
     #[test]
