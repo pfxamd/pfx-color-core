@@ -231,6 +231,33 @@ int32_t pfx_gradient_sample_xy(
 );
 void pfx_gradient_free(PfxGradient *gradient);
 
+/* Opt-in CSS pixel geometry. Legacy pfx_gradient_* retains unit-square semantics.
+ * Positions of stops are signed, finite CSS fractions and may be <0 or >1.
+ * Geometry dimensions/radii/centers are in CSS px; sample at x+.5, y+.5 for pixels.
+ * shape: 0 circle, 1 ellipse. extent: 0 closest-side, 1 farthest-side,
+ * 2 closest-corner, 3 farthest-corner, 4 explicit radii in CSS px.
+ * kind: 0 linear, 1 radial, 2 conic. repetition: 0 false, 1 true.
+ * The handle owns an independent stop list; release with free exactly once.
+ */
+typedef struct PfxCssGradient PfxCssGradient;
+PfxCssGradient *pfx_css_gradient_new(
+    uint32_t kind, double width, double height,
+    double angle, double center_x, double center_y,
+    uint32_t shape, uint32_t extent, double radius_x, double radius_y,
+    uint32_t repeating, uint32_t interpolation_space, uint32_t target,
+    uint32_t hue_method, uint32_t gamut_method
+);
+int32_t pfx_css_gradient_add_stop(
+    PfxCssGradient *gradient, double position, const PfxColor *color
+);
+int32_t pfx_css_gradient_sample_pixel(
+    const PfxCssGradient *gradient, double x, double y, PfxColor *out
+);
+int32_t pfx_css_gradient_sample_progress(
+    const PfxCssGradient *gradient, double position, PfxColor *out
+);
+void pfx_css_gradient_free(PfxCssGradient *gradient);
+
 
 /* Deterministic Color Study with exactly 10 swatches and seedable RNG. */
 PfxStudy *pfx_study_new(
