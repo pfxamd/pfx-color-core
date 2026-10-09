@@ -52,14 +52,20 @@ impl CssColor {
     }
 }
 
-/// Only absolute CSS colors are parsed. Legacy comma syntax cannot contain none.
-/// CSS calc(), relative colors and var() are deliberately not resolved here.
+/// Absolute CSS colors plus opt-in bounded calc()/relative-color expressions.
+/// var() and external computed-style resolution are deliberately unsupported.
 pub fn parse_css_missing(input: &str) -> Result<CssColor, ColorError> {
     let source = input.trim();
     if source.is_empty() || source.len() > MAX_CSS_INPUT || !source.is_ascii() {
         return Err(ColorError::InvalidSyntax);
     }
     let source = source.to_ascii_lowercase();
+    let relative = source
+        .split_once('(')
+        .is_some_and(|(_, body)| body.trim_start().starts_with("from "));
+    if relative || source.contains("calc(") {
+        return crate::css_expression::parse_css_expression(&source);
+    }
     if !source
         .split(|c: char| !c.is_ascii_alphabetic())
         .any(|w| w == "none")
