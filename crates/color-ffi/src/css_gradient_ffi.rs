@@ -171,6 +171,89 @@ pub unsafe extern "C" fn pfx_css_gradient_sample_progress(
     finish_color(result, out)
 }
 
+/// Owned RGBA8 pixels in row-major order. Callers must not hold the
+/// data pointer after free; WASM callers must copy before freeing.
+pub struct PfxCssRaster {
+    pixels: Vec<u8>,
+}
+const MAX_RASTER_PIXELS: usize = 1_048_576;
+
+fn byte(value: f64) -> u8 {
+    (value.clamp(0.0, 1.0) * 255.0).round() as u8
+}
+
+/// Render a CSS pixel gradient in one Rust call, rather than creating one
+/// PfxColor and revalidating the gradient for every pixel. Pixel positions
+/// are the centers of whole CSS px cells (x + 0.5, y + 0.5).
+///
+/// width/height must exactly equal the gradient's CSS pixel box dimensions.
+/// Returns NULL on invalid input or any sample error; never partial pixels.
+///
+/// # Safety
+/// gradient must be a live aligned handle from pfx_css_gradient_new.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_css_gradient_raster_rgba8(
+    gradient: *const PfxCssGradient,
+    width: u32,
+    height: u32,
+) -> *mut PfxCssRaster {
+    let result = (|| {
+        let handle = gradient.as_ref().ok_or(NULL)?;
+        let count = (width as usize).checked_mul(height as usize).ok_or(COLOR)?;
+        if count == 0 || count > MAX_RASTER_PIXELS
+            || handle.options.width != width as f64
+            || handle.options.height != height as f64
+        {
+            return Err(COLOR);
+        }
+        let gradient = evaluated(handle)?;
+        let mut pixels = Vec::with_capacity(count * 4);
+        for y in 0..height {
+            for x in 0..width {
+                let sample = gradient.sample_pixel(x as f64 + 0.5, y as f64 + 0.5)
+                    .map_err(|_| COLOR)?.color;
+                let color = if sample.space() == ColorSpace::Srgb {
+                    sample
+                } else {
+                    sample.to(ColorSpace::Srgb).map_err(|_| COLOR)?
+                };
+                for channel in color.channels() {
+                    pixels.push(byte(channel));
+                }
+                pixels.push(byte(color.alpha()));
+            }
+        }
+        Ok(Box::into_raw(Box::new(PfxCssRaster { pixels })))
+    })();
+    result.unwrap_or(std::ptr::null_mut())
+}
+
+/// # Safety
+/// raster must be a readable, aligned, live handle allocated by
+/// pfx_css_gradient_raster_rgba8, not previously freed.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_css_raster_ptr(raster: *const PfxCssRaster) -> *const u8 {
+    raster.as_ref().map_or(std::ptr::null(), |image| image.pixels.as_ptr())
+}
+
+/// # Safety
+/// raster must be a readable, aligned, live handle allocated by
+/// pfx_css_gradient_raster_rgba8, not previously freed.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_css_raster_len(raster: *const PfxCssRaster) -> u32 {
+    raster.as_ref().map_or(0, |image| image.pixels.len() as u32)
+}
+
+/// # Safety
+/// ptr may be NULL; otherwise it must be a live handle allocated by
+/// pfx_css_gradient_raster_rgba8, released exactly once.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_css_raster_free(ptr: *mut PfxCssRaster) {
+    if !ptr.is_null() {
+        drop(Box::from_raw(ptr));
+    }
+}
+
 /// # Safety
 /// ptr may be NULL; otherwise must be a live handle allocated by
 /// pfx_css_gradient_new, not previously freed.
