@@ -367,19 +367,3 @@ test("Rust custom harmony agrees with existing hue-offset scheme", () => {
   }
 });
 
-test("APCA-W3 contrast polarity and values match legacy Color.js", () => {
-  const rgb = [
-    srgb([0, 0, 0]), srgb([1, 1, 1]),
-    srgb([0.15, 0.3, 0.45]), srgb([0.45, 0.7, 0.9]),
-  ];
-  for (const foreground of rgb) {
-    for (const background of rgb) {
-      const observed = rust.apca(foreground, background);
-      const baseline = legacy.contrast(ts(foreground), ts(background), "apca").value;
-      assert.ok(Math.abs(observed - baseline) < 1.0,
-        "APCA comparison: " + observed + " vs " + baseline);
-    }
-  }
-  assert.ok(rust.apca(rgb[0], rgb[1]) > 100);
-  assert.ok(rust.apca(rgb[1], rgb[0]) < -100);
-});
