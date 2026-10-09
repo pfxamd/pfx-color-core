@@ -159,6 +159,32 @@ pub unsafe extern "C" fn pfx_image_free(ptr: *mut PfxImagePalette) {
     }
 }
 
+/// Allocate decoded-image upload memory, at most 64 MiB. Rust-owned.
+/// The caller must use pfx_image_buffer_free with the original length.
+#[no_mangle]
+pub extern "C" fn pfx_image_buffer_new(length: u32) -> *mut u8 {
+    if length == 0 || length as usize > MAX_RGBA_BYTES {
+        return std::ptr::null_mut();
+    }
+    Box::into_raw(vec![0_u8; length as usize].into_boxed_slice()) as *mut u8
+}
+
+/// # Safety
+/// Null or live owned memory returned by pfx_image_buffer_new(length).
+/// length must be the identical allocation size, not a cropped length.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_image_buffer_free(ptr: *mut u8, length: u32) {
+    if !ptr.is_null() {
+        if length == 0 || length as usize > MAX_RGBA_BYTES {
+            return;
+        }
+        drop(Box::from_raw(std::ptr::slice_from_raw_parts_mut(
+            ptr,
+            length as usize,
+        )));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -202,31 +228,5 @@ mod tests {
             assert_eq!(pfx_image_population(std::ptr::null(), 0), INDEX);
             assert!(pfx_image_proportion(std::ptr::null(), 0).is_nan());
         }
-    }
-}
-
-/// Allocate decoded-image upload memory, at most 64 MiB. Rust-owned.
-/// The caller must use pfx_image_buffer_free with the original length.
-#[no_mangle]
-pub extern "C" fn pfx_image_buffer_new(length: u32) -> *mut u8 {
-    if length == 0 || length as usize > MAX_RGBA_BYTES {
-        return std::ptr::null_mut();
-    }
-    Box::into_raw(vec![0_u8; length as usize].into_boxed_slice()) as *mut u8
-}
-
-/// # Safety
-/// Null or live owned memory returned by pfx_image_buffer_new(length).
-/// length must be the identical allocation size, not a cropped length.
-#[no_mangle]
-pub unsafe extern "C" fn pfx_image_buffer_free(ptr: *mut u8, length: u32) {
-    if !ptr.is_null() {
-        if length == 0 || length as usize > MAX_RGBA_BYTES {
-            return;
-        }
-        drop(Box::from_raw(std::ptr::slice_from_raw_parts_mut(
-            ptr,
-            length as usize,
-        )));
     }
 }
