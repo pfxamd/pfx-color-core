@@ -35,8 +35,8 @@ fn unsupported_legacy_or_advanced_grammar_is_rejected() {
     for text in [
         "rgba(none, 0, 0, 1)",
         "rgb(none, none, none)",
-        "hsl(from red h s l)",
-        "rgb(calc(2+3) none 0)",
+        "hsl(from var(--origin) h s l)",
+        "rgb(calc(2px + 3px) none 0)",
         "rgb(var(--red) none 0)",
         "color(none 1 2 3)",
         "rgb(none 20 30 / none / 0.4)",
