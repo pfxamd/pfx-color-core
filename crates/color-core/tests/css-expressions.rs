@@ -1,7 +1,10 @@
-use pfx_color_core::{parse_css_missing, parse_css, ColorSpace, ColorError};
+use pfx_color_core::{parse_css, parse_css_missing, ColorError, ColorSpace};
 
 fn near(actual: f64, expected: f64) {
-    assert!((actual - expected).abs() < 0.000001, "{actual} vs {expected}");
+    assert!(
+        (actual - expected).abs() < 0.000001,
+        "{actual} vs {expected}"
+    );
 }
 
 #[test]
@@ -24,7 +27,8 @@ fn relative_rgb_reference_channels_and_inherited_alpha() {
 fn relative_hsl_units_and_math_chains() {
     let color = parse_css_missing(
         "hsl(from red calc(h + 60) calc(s - 20) calc(l + 10) / calc(alpha - 0.3))",
-    ).unwrap();
+    )
+    .unwrap();
     assert_eq!(color.space(), ColorSpace::Hsl);
     let channels = color.numeric().channels();
     near(channels[0], 60.0);
@@ -43,9 +47,7 @@ fn relative_color_space_identifiers_and_no_automatic_clipping() {
         near(*actual, expected);
     }
     near(color.numeric().alpha(), 0.9);
-    let wide = parse_css_missing(
-        "rgb(from color(display-p3 1 0.5 0.5) calc(r - 1) g b)",
-    ).unwrap();
+    let wide = parse_css_missing("rgb(from color(display-p3 1 0.5 0.5) calc(r - 1) g b)").unwrap();
     assert!(wide.numeric().channels()[0] > 1.0);
 }
 
@@ -63,9 +65,7 @@ fn absolute_math_with_typed_percentage_angle_and_nested_parentheses() {
 
 #[test]
 fn nested_relative_origin_and_none_preservation() {
-    let nested = parse_css_missing(
-        "rgb(from hsl(from red h s l / alpha) r g b / alpha)",
-    ).unwrap();
+    let nested = parse_css_missing("rgb(from hsl(from red h s l / alpha) r g b / alpha)").unwrap();
     near(nested.numeric().channels()[0], 1.0);
     near(nested.numeric().channels()[2], 0.0);
     let missing = parse_css_missing("rgb(from red none g calc(b + 10) / none)").unwrap();
@@ -75,7 +75,10 @@ fn nested_relative_origin_and_none_preservation() {
     let copy = parse_css_missing("oklch(from #ff0000 l c calc(h + 120))").unwrap();
     assert_eq!(copy.space(), ColorSpace::Oklch);
     let original = parse_css("#ff0000").unwrap().to(ColorSpace::Oklch).unwrap();
-    near(copy.numeric().channels()[2], (original.channels()[2] + 120.0) % 360.0);
+    near(
+        copy.numeric().channels()[2],
+        (original.channels()[2] + 120.0) % 360.0,
+    );
 }
 
 #[test]
