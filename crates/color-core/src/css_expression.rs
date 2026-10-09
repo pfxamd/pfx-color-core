@@ -65,7 +65,12 @@ struct MathParser<'a> {
 
 impl<'a> MathParser<'a> {
     fn new(source: &'a str, variables: &'a [(&'static str, f64)]) -> Self {
-        Self { source, pos: 0, depth: 0, variables }
+        Self {
+            source,
+            pos: 0,
+            depth: 0,
+            variables,
+        }
     }
     fn rest(&self) -> &'a str {
         &self.source[self.pos..]
@@ -115,14 +120,18 @@ impl<'a> MathParser<'a> {
     fn unary(&mut self) -> Result<Quantity, ColorError> {
         if self.consume(b'+') {
             self.depth += 1;
-            if self.depth > MAX_DEPTH { return Err(ColorError::UnsupportedSyntax); }
+            if self.depth > MAX_DEPTH {
+                return Err(ColorError::UnsupportedSyntax);
+            }
             let result = self.unary();
             self.depth -= 1;
             return result;
         }
         if self.consume(b'-') {
             self.depth += 1;
-            if self.depth > MAX_DEPTH { return Err(ColorError::UnsupportedSyntax); }
+            if self.depth > MAX_DEPTH {
+                return Err(ColorError::UnsupportedSyntax);
+            }
             let result = self.unary();
             self.depth -= 1;
             let result = result?;
@@ -160,7 +169,9 @@ impl<'a> MathParser<'a> {
             if self.rest().starts_with('(') {
                 return Err(ColorError::UnsupportedSyntax);
             }
-            return self.variables.iter()
+            return self
+                .variables
+                .iter()
                 .find(|(name, _)| *name == ident)
                 .map(|(_, value)| Quantity::new(*value, Unit::Number))
                 .unwrap_or(Err(ColorError::UnsupportedSyntax));
@@ -194,7 +205,8 @@ impl<'a> MathParser<'a> {
                 self.pos = exponent_start;
             }
         }
-        let number = self.source[start..self.pos].parse::<f64>()
+        let number = self.source[start..self.pos]
+            .parse::<f64>()
             .map_err(|_| ColorError::InvalidSyntax)?;
         let unit_start = self.pos;
         while bytes.get(self.pos).is_some_and(u8::is_ascii_alphabetic) {
@@ -241,17 +253,25 @@ fn top_tokens(source: &str) -> Result<Vec<&str>, ColorError> {
                 tokens.push(&source[begin..index]);
             }
         } else {
-            if start.is_none() { start = Some(index); }
+            if start.is_none() {
+                start = Some(index);
+            }
             if chr == '(' {
                 depth += 1;
-                if depth > MAX_DEPTH { return Err(ColorError::UnsupportedSyntax); }
+                if depth > MAX_DEPTH {
+                    return Err(ColorError::UnsupportedSyntax);
+                }
             } else if chr == ')' {
-                if depth == 0 { return Err(ColorError::InvalidSyntax); }
+                if depth == 0 {
+                    return Err(ColorError::InvalidSyntax);
+                }
                 depth -= 1;
             }
         }
     }
-    if depth != 0 { return Err(ColorError::InvalidSyntax); }
+    if depth != 0 {
+        return Err(ColorError::InvalidSyntax);
+    }
     if let Some(begin) = start {
         tokens.push(&source[begin..]);
     }
@@ -290,10 +310,14 @@ fn variables(space: ColorSpace, kind: &str, color: Color) -> [(&'static str, f64
         _ => ["r", "g", "b", "alpha"],
     };
     if kind == "rgb" || kind == "rgba" {
-        for value in &mut values { *value *= 255.0; }
+        for value in &mut values {
+            *value *= 255.0;
+        }
     }
     [
-        (names[0], values[0]), (names[1], values[1]), (names[2], values[2]),
+        (names[0], values[0]),
+        (names[1], values[1]),
+        (names[2], values[2]),
         (names[3], color.alpha()),
     ]
 }
@@ -304,16 +328,32 @@ fn percent_reference(kind: &str, space: ColorSpace, index: usize) -> f64 {
         ColorSpace::Hsl | ColorSpace::Hwb => 100.0,
         ColorSpace::Lab | ColorSpace::Lch => match index {
             0 => 100.0,
-            1 => if space == ColorSpace::Lch { 150.0 } else { 125.0 },
+            1 => {
+                if space == ColorSpace::Lch {
+                    150.0
+                } else {
+                    125.0
+                }
+            }
             _ => 125.0,
         },
-        ColorSpace::Oklab | ColorSpace::Oklch => if index == 0 { 1.0 } else { 0.4 },
+        ColorSpace::Oklab | ColorSpace::Oklch => {
+            if index == 0 {
+                1.0
+            } else {
+                0.4
+            }
+        }
         _ => 1.0,
     }
 }
 
 fn output_component(
-    value: Quantity, kind: &str, space: ColorSpace, index: usize, relative: bool,
+    value: Quantity,
+    kind: &str,
+    space: ColorSpace,
+    index: usize,
+    relative: bool,
 ) -> Result<f64, ColorError> {
     let angle = match space {
         ColorSpace::Hsl | ColorSpace::Hwb => index == 0,
@@ -336,14 +376,23 @@ fn output_component(
         }
         Unit::Angle => return Err(ColorError::InvalidSyntax),
     };
-    if kind == "rgb" || kind == "rgba" { Ok(raw / 255.0) } else { Ok(raw) }
+    if kind == "rgb" || kind == "rgba" {
+        Ok(raw / 255.0)
+    } else {
+        Ok(raw)
+    }
 }
 
 fn evaluate_channel(
-    text: &str, variables: &[(&'static str, f64)],
+    text: &str,
+    variables: &[(&'static str, f64)],
 ) -> Result<Option<Quantity>, ColorError> {
-    if text == "none" { return Ok(None); }
-    if text.starts_with("var(") { return Err(ColorError::UnsupportedSyntax); }
+    if text == "none" {
+        return Ok(None);
+    }
+    if text.starts_with("var(") {
+        return Err(ColorError::UnsupportedSyntax);
+    }
     MathParser::new(text, variables).evaluate().map(Some)
 }
 
@@ -355,14 +404,18 @@ pub fn parse_css_expression(input: &str) -> Result<CssColor, ColorError> {
 }
 
 fn parse_inner(input: &str, depth: usize) -> Result<CssColor, ColorError> {
-    if depth > MAX_DEPTH { return Err(ColorError::UnsupportedSyntax); }
+    if depth > MAX_DEPTH {
+        return Err(ColorError::UnsupportedSyntax);
+    }
     let src = input.trim();
     if src.is_empty() || src.len() > MAX_CSS_INPUT || !src.is_ascii() {
         return Err(ColorError::InvalidSyntax);
     }
     let src = src.to_ascii_lowercase();
     let opening = src.find('(').ok_or(ColorError::InvalidSyntax)?;
-    if !src.ends_with(')') { return Err(ColorError::InvalidSyntax); }
+    if !src.ends_with(')') {
+        return Err(ColorError::InvalidSyntax);
+    }
     let kind = src[..opening].trim();
     let fields = top_tokens(&src[opening + 1..src.len() - 1])?;
     let relative = fields.first() == Some(&"from");
@@ -370,19 +423,25 @@ fn parse_inner(input: &str, depth: usize) -> Result<CssColor, ColorError> {
     let origin = if relative {
         let source = fields.get(index).ok_or(ColorError::InvalidSyntax)?;
         index += 1;
-        let is_relative = source.split_once('(').is_some_and(|(_, body)| body.trim_start().starts_with("from "));
+        let is_relative = source
+            .split_once('(')
+            .is_some_and(|(_, body)| body.trim_start().starts_with("from "));
         let inner = if source.contains("calc(") || is_relative {
             parse_inner(source, depth + 1)?
         } else {
             parse_css_missing(source)?
         };
         Some(inner)
-    } else { None };
+    } else {
+        None
+    };
     let model = if kind == "color" {
         let name = *fields.get(index).ok_or(ColorError::InvalidSyntax)?;
         index += 1;
         Some(name)
-    } else { None };
+    } else {
+        None
+    };
     let space = color_space(kind, model)?;
     let expected = index + 3;
     if fields.len() != expected && fields.len() != expected + 2 {
@@ -391,7 +450,9 @@ fn parse_inner(input: &str, depth: usize) -> Result<CssColor, ColorError> {
     if fields.len() == expected + 2 && fields[expected] != "/" {
         return Err(ColorError::InvalidSyntax);
     }
-    let original = origin.map(|value| value.convert_numeric(space)).transpose()?;
+    let original = origin
+        .map(|value| value.convert_numeric(space))
+        .transpose()?;
     let refs = original.map(|color| variables(space, kind, color));
     let env = refs.as_ref().map(|items| items.as_slice()).unwrap_or(&[]);
     let mut channels = [0.0_f64; 3];
@@ -410,7 +471,10 @@ fn parse_inner(input: &str, depth: usize) -> Result<CssColor, ColorError> {
                 Unit::Percent => (v.value / 100.0).clamp(0.0, 1.0),
                 Unit::Angle => return Err(ColorError::InvalidSyntax),
             },
-            None => { missing |= 8; 0.0 }
+            None => {
+                missing |= 8;
+                0.0
+            }
         }
     } else {
         original.map_or(1.0, Color::alpha)
