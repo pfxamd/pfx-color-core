@@ -40,7 +40,7 @@ in both implementations. Passing the gate does **not** imply parity elsewhere. W
 | Seeded 10-color Color Study | Ported to Rust with first-party deterministic PRNG; seeded WASM-vs-TypeScript perceptual parity tests passed | Keep TypeScript app until browser/UI integration tests pass |
 | Color-picker selection, channel editing and normalized hex | Opt-in Rust-backed JavaScript adapter with real baseline comparisons | Test independently; keep production UI on TypeScript until browser parity |
 | Workspace mutations and undo/redo | Opt-in Rust-powered JS workspace implemented with regression tests | Keep deployed UI unchanged until browser-level tests and full feature parity |
-| Optional image extraction | Not ported to Rust | Keep existing image adapter |
+| Optional image extraction | Original deterministic Rust RGBA8 palette extractor, with C ABI and JavaScript/WASM bindings | Not a byte-exact replacement for ColorThief; continue legacy integration pending visual/UI parity |
 
 ## Transition principles
 
