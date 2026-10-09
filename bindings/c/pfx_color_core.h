@@ -59,7 +59,8 @@ enum PfxHueMethod {
     PFX_HUE_SHORTER = 0,
     PFX_HUE_LONGER = 1,
     PFX_HUE_INCREASING = 2,
-    PFX_HUE_DECREASING = 3
+    PFX_HUE_DECREASING = 3,
+    PFX_HUE_RAW = 4
 };
 
 enum PfxHarmonyScheme {
