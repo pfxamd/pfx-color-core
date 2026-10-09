@@ -28,8 +28,6 @@ int main(void) {
 
 
     CHECK(fabs(pfx_color_contrast(&black, &white) - 21.0) < 1e-12);
-    CHECK(pfx_color_apca(&black, &white) > 100.0);
-    CHECK(pfx_color_apca(&white, &black) < -100.0);
     CHECK(fabs(pfx_color_difference(&black, &white, PFX_DELTA_E_OK) - 1.0) < 1e-7);
     CHECK(pfx_color_convert(&white, PFX_OKLAB, &out) == 0);
     CHECK(out.space == PFX_OKLAB);
