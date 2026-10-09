@@ -77,13 +77,8 @@ fn generate(
         if !hue.is_finite() {
             return Err(ColorError::NonFiniteResult);
         }
-        let source = Color::new(
-            ColorSpace::Oklch,
-            [lightness, chroma, hue],
-            seed.alpha(),
-        )?;
-        let (color, mapped) =
-            mapped_output(source, options.target_space, options.gamut_map)?;
+        let source = Color::new(ColorSpace::Oklch, [lightness, chroma, hue], seed.alpha())?;
+        let (color, mapped) = mapped_output(source, options.target_space, options.gamut_map)?;
         colors.push(HarmonyColor {
             index,
             hue_offset,
@@ -120,7 +115,11 @@ pub fn generate_harmony(
         }
         HarmonyScheme::Complementary => vec![0.0, 180.0],
         HarmonyScheme::SplitComplementary => {
-            vec![0.0, 180.0 - options.split_angle, 180.0 + options.split_angle]
+            vec![
+                0.0,
+                180.0 - options.split_angle,
+                180.0 + options.split_angle,
+            ]
         }
         HarmonyScheme::Triadic => vec![0.0, 120.0, 240.0],
         HarmonyScheme::Tetradic => {

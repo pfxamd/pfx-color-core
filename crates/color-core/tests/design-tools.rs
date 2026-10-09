@@ -1,7 +1,7 @@
 use pfx_color_core::{
     anchored_palette, generate_custom_harmony, generate_harmony, ramp_palette, tonal_palette,
-    Color, ColorError, ColorSpace, GamutMap, Gradient, GradientKind, GradientOptions,
-    GradientStop, HarmonyOptions, HarmonyScheme, HueMethod, RampOptions, TonalOptions,
+    Color, ColorError, ColorSpace, GamutMap, Gradient, GradientKind, GradientOptions, GradientStop,
+    HarmonyOptions, HarmonyScheme, HueMethod, RampOptions, TonalOptions,
 };
 
 fn c(space: ColorSpace, channels: [f64; 3]) -> Color {
@@ -105,7 +105,11 @@ fn tonal_palette_perceptually_maps_out_of_gamut_colors_explicitly() {
     assert!(result.colors.iter().any(|step| step.mapped));
     for step in result.colors {
         assert_eq!(step.color.space(), ColorSpace::Srgb);
-        assert!(step.color.channels().iter().all(|v| (0.0..=1.0).contains(v)));
+        assert!(step
+            .color
+            .channels()
+            .iter()
+            .all(|v| (0.0..=1.0).contains(v)));
     }
 }
 
@@ -286,7 +290,11 @@ fn harmony_explicitly_maps_gamut_without_changing_source() {
     for color in harmony.colors {
         assert_eq!(color.color.space(), ColorSpace::Srgb);
         close(color.color.alpha(), 0.7, 0.0);
-        assert!(color.color.channels().iter().all(|v| (0.0..=1.0).contains(v)));
+        assert!(color
+            .color
+            .channels()
+            .iter()
+            .all(|v| (0.0..=1.0).contains(v)));
     }
     assert_eq!(seed.channels(), [0.65, 0.4, 20.0]);
 }
@@ -298,10 +306,22 @@ fn gradient_stops_are_stably_sorted_and_duplicate_position_is_hard_stop() {
     let yellow = c(ColorSpace::Srgb, [1.0, 1.0, 0.0]);
     let blue = c(ColorSpace::Srgb, [0.0, 0.0, 1.0]);
     let stops = [
-        GradientStop { position: 1.0, color: blue },
-        GradientStop { position: 0.0, color: red },
-        GradientStop { position: 0.5, color: green },
-        GradientStop { position: 0.5, color: yellow },
+        GradientStop {
+            position: 1.0,
+            color: blue,
+        },
+        GradientStop {
+            position: 0.0,
+            color: red,
+        },
+        GradientStop {
+            position: 0.5,
+            color: green,
+        },
+        GradientStop {
+            position: 0.5,
+            color: yellow,
+        },
     ];
     let gradient = Gradient::new(&stops, gradient_options()).unwrap();
     assert_eq!(gradient.stops()[0].color, red);
@@ -322,8 +342,14 @@ fn gradient_samples_are_premultiplied_alpha_and_have_exact_endpoints() {
     let blue = c(ColorSpace::Srgb, [0.0, 0.0, 1.0]);
     let gradient = Gradient::new(
         &[
-            GradientStop { position: 0.0, color: red },
-            GradientStop { position: 1.0, color: blue },
+            GradientStop {
+                position: 0.0,
+                color: red,
+            },
+            GradientStop {
+                position: 1.0,
+                color: blue,
+            },
         ],
         gradient_options(),
     )
@@ -341,8 +367,14 @@ fn gradient_extends_first_and_last_colors_outside_stops() {
     let blue = c(ColorSpace::Srgb, [0.0, 0.0, 1.0]);
     let gradient = Gradient::new(
         &[
-            GradientStop { position: 0.2, color: red },
-            GradientStop { position: 0.8, color: blue },
+            GradientStop {
+                position: 0.2,
+                color: red,
+            },
+            GradientStop {
+                position: 0.8,
+                color: blue,
+            },
         ],
         gradient_options(),
     )
@@ -357,8 +389,14 @@ fn linear_geometry_respects_css_like_angles_on_unit_square() {
     let red = c(ColorSpace::Srgb, [1.0, 0.0, 0.0]);
     let blue = c(ColorSpace::Srgb, [0.0, 0.0, 1.0]);
     let stops = [
-        GradientStop { position: 0.0, color: red },
-        GradientStop { position: 1.0, color: blue },
+        GradientStop {
+            position: 0.0,
+            color: red,
+        },
+        GradientStop {
+            position: 1.0,
+            color: blue,
+        },
     ];
     let right = Gradient::new(&stops, gradient_options()).unwrap();
     close(right.sample_xy(0.0, 0.5).unwrap().position, 0.0, 1e-12);
@@ -382,18 +420,31 @@ fn radial_geometry_uses_farthest_unit_square_corner() {
     let blue = c(ColorSpace::Srgb, [0.0, 0.0, 1.0]);
     let radial = Gradient::new(
         &[
-            GradientStop { position: 0.0, color: red },
-            GradientStop { position: 1.0, color: blue },
+            GradientStop {
+                position: 0.0,
+                color: red,
+            },
+            GradientStop {
+                position: 1.0,
+                color: blue,
+            },
         ],
         GradientOptions {
-            kind: GradientKind::Radial { center_x: 0.5, center_y: 0.5 },
+            kind: GradientKind::Radial {
+                center_x: 0.5,
+                center_y: 0.5,
+            },
             ..gradient_options()
         },
     )
     .unwrap();
     close(radial.sample_xy(0.5, 0.5).unwrap().position, 0.0, 0.0);
     close(radial.sample_xy(0.0, 0.0).unwrap().position, 1.0, 1e-12);
-    close(radial.sample_xy(1.0, 0.5).unwrap().position, 0.5_f64.sqrt(), 1e-12);
+    close(
+        radial.sample_xy(1.0, 0.5).unwrap().position,
+        0.5_f64.sqrt(),
+        1e-12,
+    );
 }
 
 #[test]
@@ -401,8 +452,14 @@ fn conic_geometry_uses_clockwise_rotation_from_up() {
     let white = c(ColorSpace::Srgb, [1.0, 1.0, 1.0]);
     let black = c(ColorSpace::Srgb, [0.0, 0.0, 0.0]);
     let stops = [
-        GradientStop { position: 0.0, color: black },
-        GradientStop { position: 1.0, color: white },
+        GradientStop {
+            position: 0.0,
+            color: black,
+        },
+        GradientStop {
+            position: 1.0,
+            color: white,
+        },
     ];
     let conic = Gradient::new(
         &stops,
@@ -440,13 +497,25 @@ fn conic_geometry_uses_clockwise_rotation_from_up() {
 fn gradient_rejects_out_of_range_positions_and_nonfinite_geometry() {
     let color = c(ColorSpace::Srgb, [0.4, 0.4, 0.4]);
     let stops = [
-        GradientStop { position: 0.0, color },
-        GradientStop { position: 1.0, color },
+        GradientStop {
+            position: 0.0,
+            color,
+        },
+        GradientStop {
+            position: 1.0,
+            color,
+        },
     ];
-    assert_eq!(Gradient::new(&stops[..1], gradient_options()), Err(ColorError::InvalidCount));
+    assert_eq!(
+        Gradient::new(&stops[..1], gradient_options()),
+        Err(ColorError::InvalidCount)
+    );
     for position in [-0.001, 1.001, f64::NAN, f64::INFINITY] {
         let invalid = [
-            GradientStop { position: 0.0, color },
+            GradientStop {
+                position: 0.0,
+                color,
+            },
             GradientStop { position, color },
         ];
         assert_eq!(
@@ -459,7 +528,9 @@ fn gradient_rejects_out_of_range_positions_and_nonfinite_geometry() {
             Gradient::new(
                 &stops,
                 GradientOptions {
-                    kind: GradientKind::Linear { angle_degrees: angle },
+                    kind: GradientKind::Linear {
+                        angle_degrees: angle
+                    },
                     ..gradient_options()
                 }
             ),
@@ -470,7 +541,10 @@ fn gradient_rejects_out_of_range_positions_and_nonfinite_geometry() {
         Gradient::new(
             &stops,
             GradientOptions {
-                kind: GradientKind::Radial { center_x: 1.1, center_y: 0.5 },
+                kind: GradientKind::Radial {
+                    center_x: 1.1,
+                    center_y: 0.5
+                },
                 ..gradient_options()
             }
         ),
@@ -478,7 +552,10 @@ fn gradient_rejects_out_of_range_positions_and_nonfinite_geometry() {
     );
     let gradient = Gradient::new(&stops, gradient_options()).unwrap();
     assert_eq!(gradient.sample(f64::NAN), Err(ColorError::InvalidPosition));
-    assert_eq!(gradient.sample_xy(-0.1, 0.4), Err(ColorError::InvalidPosition));
+    assert_eq!(
+        gradient.sample_xy(-0.1, 0.4),
+        Err(ColorError::InvalidPosition)
+    );
 }
 
 #[test]
@@ -486,8 +563,14 @@ fn gradients_are_deterministic_and_do_not_map_sources_implicitly() {
     let p3 = c(ColorSpace::DisplayP3, [0.0, 1.0, 0.0]);
     let black = c(ColorSpace::Srgb, [0.0, 0.0, 0.0]);
     let stops = [
-        GradientStop { position: 0.0, color: p3 },
-        GradientStop { position: 1.0, color: black },
+        GradientStop {
+            position: 0.0,
+            color: p3,
+        },
+        GradientStop {
+            position: 1.0,
+            color: black,
+        },
     ];
     let gradient = Gradient::new(&stops, gradient_options()).unwrap();
     assert!(gradient.sample(0.0).unwrap().mapped);
@@ -511,7 +594,13 @@ fn maximum_palette_and_gradient_size_is_bounded() {
         .len(),
         256
     );
-    let stops = vec![GradientStop { position: 0.5, color: seed }; 257];
+    let stops = vec![
+        GradientStop {
+            position: 0.5,
+            color: seed
+        };
+        257
+    ];
     assert_eq!(
         Gradient::new(&stops, gradient_options()),
         Err(ColorError::InvalidCount)

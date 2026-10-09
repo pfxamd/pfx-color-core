@@ -180,10 +180,7 @@ pub fn ramp_palette(
 /// Interpolate evenly spaced anchors. The first and last are exact anchors;
 /// intermediate anchors are reproduced exactly when their position coincides
 /// with a sampled index, otherwise the output samples between them.
-pub fn anchored_palette(
-    anchors: &[Color],
-    options: RampOptions,
-) -> Result<Palette, ColorError> {
+pub fn anchored_palette(anchors: &[Color], options: RampOptions) -> Result<Palette, ColorError> {
     validate_count(options.count)?;
     if anchors.len() < 2 || anchors.len() > options.count {
         return Err(ColorError::InvalidCount);

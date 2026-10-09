@@ -35,7 +35,9 @@ pub struct GradientOptions {
 impl Default for GradientOptions {
     fn default() -> Self {
         Self {
-            kind: GradientKind::Linear { angle_degrees: 90.0 },
+            kind: GradientKind::Linear {
+                angle_degrees: 90.0,
+            },
             interpolation_space: ColorSpace::Oklch,
             target_space: ColorSpace::Srgb,
             hue_method: HueMethod::Shorter,
@@ -70,10 +72,7 @@ fn in_unit_range(value: f64) -> bool {
 impl Gradient {
     /// Create a gradient with 2..=256 stops. Stable sorting preserves input
     /// order among repeated positions, enabling hard transitions.
-    pub fn new(
-        stops: &[GradientStop],
-        options: GradientOptions,
-    ) -> Result<Self, ColorError> {
+    pub fn new(stops: &[GradientStop], options: GradientOptions) -> Result<Self, ColorError> {
         if !(2..=MAX_PALETTE_COLORS).contains(&stops.len()) {
             return Err(ColorError::InvalidCount);
         }
@@ -123,11 +122,8 @@ impl Gradient {
     }
 
     fn emit(&self, source: Color, position: f64) -> Result<GradientSample, ColorError> {
-        let (color, mapped) = mapped_output(
-            source,
-            self.options.target_space,
-            self.options.gamut_map,
-        )?;
+        let (color, mapped) =
+            mapped_output(source, self.options.target_space, self.options.gamut_map)?;
         Ok(GradientSample {
             position,
             color,

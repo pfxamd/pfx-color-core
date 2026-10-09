@@ -25,7 +25,12 @@ pub use conversion::convert;
 pub use difference::{difference, DifferenceMethod};
 pub use gamut::{is_in_gamut, map_to_gamut, GamutMap};
 pub use gradients::{Gradient, GradientKind, GradientOptions, GradientSample, GradientStop};
-pub use harmony::{generate_custom_harmony, generate_harmony, Harmony, HarmonyColor, HarmonyOptions, HarmonyScheme};
+pub use harmony::{
+    generate_custom_harmony, generate_harmony, Harmony, HarmonyColor, HarmonyOptions, HarmonyScheme,
+};
 pub use interpolation::{interpolate, HueMethod};
-pub use palettes::{anchored_palette, ramp_palette, tonal_palette, Palette, PaletteColor, PaletteMode, RampOptions, TonalOptions, MAX_PALETTE_COLORS};
+pub use palettes::{
+    anchored_palette, ramp_palette, tonal_palette, Palette, PaletteColor, PaletteMode, RampOptions,
+    TonalOptions, MAX_PALETTE_COLORS,
+};
 pub use spaces::{Color, ColorError, ColorSpace};
