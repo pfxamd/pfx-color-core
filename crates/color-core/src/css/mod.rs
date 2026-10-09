@@ -147,7 +147,7 @@ fn function(input: &str) -> Result<Color, ColorError> {
             return Err(ColorError::UnsupportedSyntax);
         }
         let (head, alpha) = if let Some((head, tail)) = body.split_once('/') {
-            if tail.contains('/') || tail.trim().split_whitespace().count() != 1 {
+            if tail.contains('/') || tail.split_whitespace().count() != 1 {
                 return Err(ColorError::InvalidSyntax);
             }
             (head, Some(tail.trim()))
