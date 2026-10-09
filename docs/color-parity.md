@@ -37,7 +37,7 @@ in both implementations. Passing the gate does **not** imply parity elsewhere. W
 | Full CSS-compatible gradient serialization/geometry | Missing: Rust normalized unit square | Keep TypeScript |
 | Arbitrary anchored palettes/custom harmony in WASM ABI | Implemented in Rust, C ABI and WASM with owned builders | Eligible for parity checking; no production UI switch |
 | Seeded 10-color Color Study | Ported to Rust with first-party deterministic PRNG; seeded WASM-vs-TypeScript perceptual parity tests passed | Keep TypeScript app until browser/UI integration tests pass |
-| Color-picker selection, channel editing and normalized hex | Not implemented end-to-end | Keep TypeScript |
+| Color-picker selection, channel editing and normalized hex | Opt-in Rust-backed JavaScript adapter with real baseline comparisons | Test independently; keep production UI on TypeScript until browser parity |
 | Workspace mutations and undo/redo | Not ported | Keep TypeScript |
 | Optional image extraction | Not ported to Rust | Keep existing image adapter |
 

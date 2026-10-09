@@ -45,6 +45,8 @@ jobs:
         run: npm run build
       - name: Compare Rust WebAssembly against real TypeScript engine
         run: node --test bindings/javascript/legacy-parity.smoke.mjs
+      - name: Verify opt-in Rust color-picker interface against legacy
+        run: node --test bindings/javascript/pfx-color-tools.smoke.mjs
       - name: Bundle tested standalone WebAssembly engine
         uses: actions/upload-artifact@v4
         with:

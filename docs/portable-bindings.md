@@ -144,3 +144,11 @@ integration, scientific fixtures, deterministic Color Study and cross-engine
 compatibility before bundling. A successful Linux binary build alone does
 not claim validation on macOS or Windows; those native targets need their
 own compiler and integration runs.
+
+## Opt-in PFx Colors picker bridge
+
+The optional `bindings/javascript/pfx-color-tools.mjs` module wraps the Rust WASM API with the original high-level picker operations (`selectColor`, `setColorChannel`, `setColorAlpha`, `mapColorToGamut`). It accepts CSS strings and numeric color inputs, and returns familiar `hex`, `source`, `values`, `alpha` and `gamut` fields. It maps the legacy `p3` identifier to the Rust `display-p3` identifier, and calls Rust for all parsing, conversion, gamut mapping and formatting. Unsupported CSS `none`/missing channels are explicitly rejected. This bridge remains opt-in and is not imported by the deployed app.
+
+After initialising the core with `createPfxColorCore(wasmBytes)`, import `createPfxColorTools` and call `const tools = createPfxColorTools(core);` followed by `tools.selectColor("#336699")`.
+
+Regression tests compare the bridge against the real TypeScript implementation, using the compiled Rust WASM build: `node --test bindings/javascript/pfx-color-tools.smoke.mjs`.
