@@ -117,6 +117,9 @@ try {
 - `repeating: true` repeats by the first-to-last stop interval.
   A zero-length repeating period produces the W3C-specified uniformly
   averaged premultiplied sRGBA color, including its alpha component.
+  **Known renderer discrepancy:** Chromium in the screenshot suite rendered
+  the final stop instead for the degenerate zero-length case. CI records
+  this difference while the engine keeps the W3C result.
 - The C equivalents use `pfx_css_gradient_new`,
   `pfx_css_gradient_add_stop`, `pfx_css_gradient_sample_pixel`,
   `pfx_css_gradient_sample_progress`, `pfx_css_gradient_free`.
