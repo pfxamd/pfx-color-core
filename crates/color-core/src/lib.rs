@@ -38,4 +38,6 @@ pub use palettes::{
     TonalOptions, MAX_PALETTE_COLORS,
 };
 pub use spaces::{Color, ColorError, ColorSpace};
-pub use study::{generate_color_study, ColorStudy, ColorStudyColor, ColorStudyOptions, STUDY_COUNT};
+pub use study::{
+    generate_color_study, ColorStudy, ColorStudyColor, ColorStudyOptions, STUDY_COUNT,
+};

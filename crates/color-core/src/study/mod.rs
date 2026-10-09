@@ -15,9 +15,7 @@ pub const STUDY_COUNT: usize = 10;
 const LIGHTNESS_TRACK: [f64; 10] = [
     -0.48, -0.30, 0.34, -0.14, 0.20, -0.58, 0.48, -0.22, 0.10, -0.04,
 ];
-const CHROMA_TRACK: [f64; 10] = [
-    1.0, 0.72, 0.58, 1.18, 0.88, 0.52, 0.4, 1.08, 0.78, 0.94,
-];
+const CHROMA_TRACK: [f64; 10] = [1.0, 0.72, 0.58, 1.18, 0.88, 0.52, 0.4, 1.08, 0.78, 0.94];
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ColorStudyOptions {
@@ -96,9 +94,14 @@ pub fn generate_color_study(
     seed: Color,
     options: ColorStudyOptions,
 ) -> Result<ColorStudy, ColorError> {
-    if [options.lightness, options.chroma, options.hue_range, options.tone_range]
-        .iter()
-        .any(|value| !value.is_finite())
+    if [
+        options.lightness,
+        options.chroma,
+        options.hue_range,
+        options.tone_range,
+    ]
+    .iter()
+    .any(|value| !value.is_finite())
     {
         return Err(ColorError::InvalidRange);
     }
@@ -117,8 +120,7 @@ pub fn generate_color_study(
     };
     let seed_chroma = seed_oklch[1];
     let lightness_center = 0.18 + lightness_amount * 0.68;
-    let requested_chroma =
-        0.018 + chroma_amount * 0.282 + seed_chroma.min(0.18) * 0.16;
+    let requested_chroma = 0.018 + chroma_amount * 0.282 + seed_chroma.min(0.18) * 0.16;
     let working_chroma = requested_chroma.clamp(0.018, 0.32);
 
     let harmony_seed = Color::new(
@@ -158,8 +160,7 @@ pub fn generate_color_study(
             let attempt = attempt as f64;
             let hue_jitter = (random.next() - 0.5)
                 * (3.0 + hue_range_amount * 22.0 + attempt * (1.5 + hue_range_amount * 4.0));
-            let lightness_jitter =
-                (random.next() - 0.5) * (0.008 + tone_range_amount * 0.042);
+            let lightness_jitter = (random.next() - 0.5) * (0.008 + tone_range_amount * 0.042);
             let chroma_jitter = (random.next() - 0.5) * (0.006 + chroma_amount * 0.028);
 
             let lightness = (lightness_center
@@ -177,24 +178,20 @@ pub fn generate_color_study(
                 + hue_jitter
                 + attempt * (1.5 + hue_range_amount * 4.0))
                 .rem_euclid(360.0);
-            candidate = Color::new(
-                ColorSpace::Oklch,
-                [lightness, chroma, hue],
-                seed.alpha(),
-            )?;
+            candidate = Color::new(ColorSpace::Oklch, [lightness, chroma, hue], seed.alpha())?;
 
-            let sufficient_distance = colors.iter().try_fold(f64::INFINITY, |closest, existing| {
-                let next = difference(candidate, existing.color, DifferenceMethod::Ok)?;
-                Ok::<f64, ColorError>(closest.min(next))
-            })?;
+            let sufficient_distance =
+                colors.iter().try_fold(f64::INFINITY, |closest, existing| {
+                    let next = difference(candidate, existing.color, DifferenceMethod::Ok)?;
+                    Ok::<f64, ColorError>(closest.min(next))
+                })?;
 
             if sufficient_distance >= minimum_distance || attempt == 7.0 {
                 break;
             }
         }
 
-        let (color, mapped) =
-            mapped_output(candidate, options.target_space, options.gamut_map)?;
+        let (color, mapped) = mapped_output(candidate, options.target_space, options.gamut_map)?;
         colors.push(ColorStudyColor {
             index,
             oklch: color.to(ColorSpace::Oklch)?.channels(),
@@ -218,11 +215,7 @@ mod tests {
     #[test]
     fn seeded_random_is_bytewise_stable() {
         let mut rng = Mulberry32(123);
-        let expected = [
-            0.7872516233474016,
-            0.1785435655619949,
-            0.49531551403924823,
-        ];
+        let expected = [0.7872516233474016, 0.1785435655619949, 0.49531551403924823];
         for target in expected {
             assert!((rng.next() - target).abs() < 1e-14);
         }
@@ -242,7 +235,11 @@ mod tests {
         assert!(a.colors.iter().all(|v| v.color.alpha() == 0.8));
         for (i, item) in a.colors.iter().enumerate() {
             assert_eq!(i, item.index);
-            assert!(item.color.channels().iter().all(|v| (0.0..=1.0).contains(v)));
+            assert!(item
+                .color
+                .channels()
+                .iter()
+                .all(|v| (0.0..=1.0).contains(v)));
         }
     }
 
@@ -253,6 +250,9 @@ mod tests {
             tone_range: f64::NAN,
             ..ColorStudyOptions::default()
         };
-        assert_eq!(generate_color_study(seed, options), Err(ColorError::InvalidRange));
+        assert_eq!(
+            generate_color_study(seed, options),
+            Err(ColorError::InvalidRange)
+        );
     }
 }

@@ -10,11 +10,11 @@
 //! C/WASM/JS callers must use ABI revision pfx_abi_version() == 1.
 
 use pfx_color_core::{
-    ColorStudy, ColorStudyOptions, generate_color_study,
-    contrast_ratio, difference, format_css, format_hex, generate_harmony, interpolate, is_in_gamut,
-    map_to_gamut, parse_css, ramp_palette, relative_luminance, tonal_palette, Color, ColorSpace,
-    DifferenceMethod, GamutMap, Gradient, GradientKind, GradientOptions, GradientStop,
-    HarmonyOptions, HarmonyScheme, HueMethod, Palette, RampOptions, TonalOptions,
+    contrast_ratio, difference, format_css, format_hex, generate_color_study, generate_harmony,
+    interpolate, is_in_gamut, map_to_gamut, parse_css, ramp_palette, relative_luminance,
+    tonal_palette, Color, ColorSpace, ColorStudy, ColorStudyOptions, DifferenceMethod, GamutMap,
+    Gradient, GradientKind, GradientOptions, GradientStop, HarmonyOptions, HarmonyScheme,
+    HueMethod, Palette, RampOptions, TonalOptions,
 };
 
 const NULL: i32 = -1;
@@ -755,7 +755,6 @@ pub unsafe extern "C" fn pfx_css_format(
     output.len() as i32
 }
 
-
 /// Heap-owned deterministic 10-color study.
 pub struct PfxStudy {
     study: ColorStudy,
@@ -790,7 +789,8 @@ pub unsafe extern "C" fn pfx_study_new(
         )
         .map_err(|_| COLOR)
     })();
-    result.map(|study| Box::into_raw(Box::new(PfxStudy { study })))
+    result
+        .map(|study| Box::into_raw(Box::new(PfxStudy { study })))
         .unwrap_or(std::ptr::null_mut())
 }
 
@@ -822,11 +822,19 @@ pub unsafe extern "C" fn pfx_study_scheme(ptr: *const PfxStudy) -> u32 {
 /// study must be a live handle and out a writable PfxColor.
 #[no_mangle]
 pub unsafe extern "C" fn pfx_study_get(
-    study: *const PfxStudy, index: u32, out: *mut PfxColor
+    study: *const PfxStudy,
+    index: u32,
+    out: *mut PfxColor,
 ) -> i32 {
     let result = (|| {
-        Ok(study.as_ref().ok_or(NULL)?.study.colors
-            .get(index as usize).ok_or(INDEX)?.color)
+        Ok(study
+            .as_ref()
+            .ok_or(NULL)?
+            .study
+            .colors
+            .get(index as usize)
+            .ok_or(INDEX)?
+            .color)
     })();
     finish_color(result, out)
 }
@@ -836,7 +844,9 @@ pub unsafe extern "C" fn pfx_study_get(
 /// study must be null or a live handle.
 #[no_mangle]
 pub unsafe extern "C" fn pfx_study_mapped(study: *const PfxStudy, index: u32) -> i32 {
-    study.as_ref().and_then(|s| s.study.colors.get(index as usize))
+    study
+        .as_ref()
+        .and_then(|s| s.study.colors.get(index as usize))
         .map_or(INDEX, |color| i32::from(color.mapped))
 }
 
@@ -845,10 +855,15 @@ pub unsafe extern "C" fn pfx_study_mapped(study: *const PfxStudy, index: u32) ->
 /// study must be null or a live handle.
 #[no_mangle]
 pub unsafe extern "C" fn pfx_study_oklch(
-    study: *const PfxStudy, index: u32, coordinate: u32
+    study: *const PfxStudy,
+    index: u32,
+    coordinate: u32,
 ) -> f64 {
-    study.as_ref().and_then(|s| s.study.colors.get(index as usize))
-        .and_then(|c| c.oklch.get(coordinate as usize)).copied()
+    study
+        .as_ref()
+        .and_then(|s| s.study.colors.get(index as usize))
+        .and_then(|c| c.oklch.get(coordinate as usize))
+        .copied()
         .unwrap_or(f64::NAN)
 }
 
