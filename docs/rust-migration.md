@@ -1,46 +1,53 @@
-# PFx Color Core — migration state
+# PFx Color Core — Rust migration state
 
-The original `v0.1.0` TypeScript package and published PFx Colors website remain
-unchanged. Rust is maintained as an independent, first-party implementation in
-the same repository. **No third-party Cargo dependencies** are permitted in
-the engine or C/WASM bindings. Native and browser code uses the exact same
-Rust computational functions, with no reimplementation of color math in JS.
+**Code audit:** 2026-10-09, `main` at [`7b382b115d`](https://github.com/pfxamd/pfx-color-core/commit/7b382b115de33a43845a5dea9409a57e68d2210f).
+**Production:** existing TypeScript `v0.1.0` and the deployed PFx Colors UI are **unchanged**. Rust has **no stable production release** and is not plugged into the default UI.
 
-## Repository structure
+## Implemented (verified in source and tests)
 
-- `crates/color-core/src/math`, `spaces`, `conversion`: f64 matrix math,
-  transfer curves, XYZ D65/D50, CIE Lab/LCH and OKLab/OKLCH
-- `crates/color-core/src/css`, `cylindrical`: absolute CSS color parsing,
-  named colors, HEX/CSS output, HSL/HWB/HSV
-- `difference`, `contrast`, `interpolation`, `gamut`: CIE76/CIEDE2000/
-  Delta-E OK, opaque sRGB WCAG contrast, premultiplied alpha interpolation and
-  explicit gamut mapping (clip, Oklch chroma, CSS Local MINDE)
-- `palettes`, `harmony`, `gradients`, `study`: deterministic color design
-  algorithms, including the seedable 10-color PFx Colors Study
-- `crates/color-ffi`: versioned native C ABI and WebAssembly exports
-- `bindings/c`: stable C headers and linked C smoke test
-- `bindings/javascript/pfx-color-core.mjs`: zero-runtime-package WASM loader
-- `bindings/javascript/pfx-color-tools.mjs`: opt-in picker and Color Study
-- `bindings/javascript/pfx-color-workspace.mjs`: opt-in tool state, palette,
-  harmony, gradient orchestration and undo/redo; not included in production
-- `scripts/browser-wasm-smoke.mjs`: independent Chromium/Firefox validation
+- **Dependency-free Rust math** (`crates/color-core/`): f64 conversions for sRGB, linear RGB, P3, Rec.2020, XYZ D50/D65, Lab D50/**D65**, LCH, OKLab/OKLCH, HSL/HWB/HSV, Adobe RGB (A98) and ProPhoto.
+- **Difference, contrast and gamut**: CIE76, CIEDE2000, Delta-E OK; opaque sRGB WCAG 2.2; explicit clip/Oklch/CSS Local MINDE mapping.
+- **Interpolation**: alpha-aware rectangular/polar mixing, shorter/longer/increasing/decreasing/**raw** hue methods, HSL/HWB/HSV hue semantics and powerless-hue handling. CSS missing `none` values are still unsupported.
+- **Design functions**: deterministic tonal/ramp/anchored palettes, standard/custom harmonies, seeded 10-swatch Color Study, and 2–256-stop linear/radial/conic gradient sampling in normalized coordinates.
+- **Bounded CSS color IO**: absolute CSS formats (HEX, RGB/HSL/HWB, Lab/LCH/OKLab/OKLCH, supported `color()` spaces, 148 named colors) and formatting. Not a complete CSS Color 4 interpreter.
+- **Decoded RGBA8 image palette extractor**: deterministic Oklab clustering of caller-decoded pixel buffers; 1–32 swatches, bounded memory and samples, region/alpha/near-white options. Not an image file decoder, an ICC color-managed pipeline or a drop-in ColorThief implementation.
+- **Portable consumption**: versioned C ABI, WASM JS wrapper without external runtime packages, optional Rust-backed picker and JavaScript workspace/history. Color math remains inside Rust.
+- **Independent CI**: tested Rust/C/native Linux, Node WASM and parity with real TypeScript; headless Chromium and Firefox at desktop and mobile viewport sizes.
 
-## Engineering contracts
+## Current engineering contracts
 
-1. Full internal numeric precision is f64, with no RGB byte quantization
-   until a user explicitly requests HEX output.
-2. Conversion does not silently clip. Mapping is a caller's explicit choice.
-3. Color space IDs are versioned across the FFI (do not export Rust enum ABI).
-4. Invalid and non-finite input is rejected, not silently coerced.
-5. Alpha stays intact during conversion; interpolation uses premultiplied
-   alpha with explicit hue-path semantics.
-6. The independent engine contains no React, browser, DOM or external
-   third-party computation code.
-7. Opaque C handles have explicit ownership and release functions.
-8. Existing TypeScript and released website remain unchanged until the
-   corresponding browser/UI regression gates have passed.
+1. Preserve f64 coordinates without byte quantization until explicit HEX export; no implicit clipping.
+2. Treat gamut mapping as an explicit decision and reject invalid/non-finite input.
+3. Keep stable numeric wire identifiers for color spaces/hue methods; avoid exporting compiler-layout Rust enums through the C ABI.
+4. Keep input/output buffer lifetimes and owned handles explicit. Callers must respect pointer ownership.
+5. Implement color calculations in the Rust crate only; JavaScript may orchestrate UI, history and transport, not duplicate algorithms.
+6. Use no third-party Cargo crates in the computational engine or C/WASM bridge.
+7. Leave the current TypeScript production engine pinned until **real UI** feature parity, acceptance and regression gates pass.
+8. Keep APCA out of the Apache-2.0 Rust core pending a clear separate license/integration decision.
 
-## Active validation
+## Next work — do not reimplement completed features
+
+| Priority | Work not yet complete | Required acceptance |
+| --- | --- | --- |
+| P0 | CSS missing-channel `none` model | Explicit optional channel representation; parser/interpolation/formatting/FFI round trips and numeric/reference fixtures; no silent zero substitution |
+| P1 | Relative color expressions and `calc()`/`var()` | Defined resolution contract, conformance fixtures and correctly rejected unsupported expressions |
+| P2 | Accurate CSS gradient layout | Real-size geometry and visual pixel regression in Chromium/Firefox; normalized unit-square calculations alone do not qualify |
+| P3 | Missing specialized color spaces/differences | Prioritized, separately licensed reference-driven additions (e.g. OKHSL/OKHSV, ITP/Jz/HCT). APCA is a separate licensing decision |
+| P4 | Image/color-management compatibility | Decode/ICC responsibilities clarified; representative images and visual legacy comparison before changing the UI image tool |
+| P5 | Actual PFx Colors integration | Opt-in React bridge, interaction and browser regression, feature/UX/performance acceptance, planned fallback; default remains TypeScript |
+| P6 | Release portability | Validated target-specific Windows/macOS builds if claimed; versioned Rust/FFI contract and a release only after preceding gates |
+
+## Verified CI checkpoint
+
+For `7b382b1` on 2026-10-09:
+
+- [Rust Color Core CI — passed](https://github.com/pfxamd/pfx-color-core/actions/runs/37953015854)
+- [Rust WASM Browser Compatibility — passed](https://github.com/pfxamd/pfx-color-core/actions/runs/37953015951)
+- [Legacy TypeScript Color Core CI — passed](https://github.com/pfxamd/pfx-color-core/actions/runs/37953015739)
+
+The browser suite runs **real WASM** in headless desktop/mobile **viewports**, not the deployed React application or real mobile devices. Linux C linkage does not prove native Windows/macOS portability.
+
+### Reproduction commands
 
 ```sh
 cargo fmt --all -- --check
@@ -51,24 +58,8 @@ cargo build --workspace --target wasm32-unknown-unknown --release
 node --test bindings/javascript/pfx-color-core.smoke.mjs
 ```
 
-GitHub Actions additionally runs C-ABI smoke, real Rust WASM-versus-TypeScript
-comparison, opt-in picker/workspace tests, and independent headless
-Chromium/Firefox checks at desktop and mobile viewport sizes. Browser runners
-are CI-only test infrastructure, not runtime dependencies.
+The complete CI also builds the original TypeScript reference, compares real Rust WASM against it, and runs opt-in picker/workspace plus browser tests.
 
-## Remaining migration blockers
+See [audited capability matrix](color-parity.md) and [portable integration guide](portable-bindings.md).
 
-- CSS missing channel (`none`), relative-color syntax, `calc()`/`var()`
-  and other unsupported CSS Color 4 grammar
-- Additional spaces and algorithms: A98, ProPhoto, Lab D65, OKHSL/OKHSV,
-  APCA, Delta-E ITP/Jz/HCT
-- External ICC profiles and image palette extraction
-- Complete CSS gradient pixel geometry and browser rendering semantics
-- Actual React UI migration and user-interaction regression verification
-
-See [color parity matrix](color-parity.md),
-[bindings and independent build instructions](portable-bindings.md),
-[W3C CSS Color 4](https://www.w3.org/TR/css-color-4/) and
-[WCAG 2.2](https://www.w3.org/TR/WCAG22/).
-
-The published `v0.1.0` tag refers to TypeScript, **not** a Rust release.
+The published `v0.1.0` tag is the **TypeScript extraction**, not a release of the Rust engine.
