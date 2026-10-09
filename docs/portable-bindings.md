@@ -125,6 +125,25 @@ try {
   `pfx_css_gradient_sample_progress`, `pfx_css_gradient_free`.
   See `bindings/c/pfx_color_core.h` for the exact argument and enum codes.
 
+For fast preview rasterization, the opt-in C and JavaScript bindings additionally
+offer a **single-call owned RGBA8 raster**:
+
+```js
+const pixels = gradient.rasterRGBA8(240, 120); // Uint8ClampedArray
+// pixels.length === 240 * 120 * 4; tightly packed RGBA, unassociated alpha
+```
+
+The integer dimensions must match those used to construct the gradient,
+with at most 1,048,576 pixels per call. Unlike per-pixel `samplePixel()`,
+this computes the complete image in Rust, converts output to sRGB bytes,
+and returns a JavaScript-owned copy before releasing the native memory.
+Callers may retain the returned array after `gradient.dispose()`.
+The C API uses `pfx_css_gradient_raster_rgba8`, then
+`pfx_css_raster_ptr` / `pfx_css_raster_len`; callers must release the
+owned raster via `pfx_css_raster_free` once and must not keep the native
+pointer after that call. This is additive to ABI revision 1 and does not
+change the original 40-byte color structure.
+
 Representative Rust-sampled pixels are compared against **actual CSS gradient
 screenshots**, decoded in the same real headless Chromium/Firefox process, at
 1440×900 and 390×844 browser viewports. Those are **viewports, not physical
