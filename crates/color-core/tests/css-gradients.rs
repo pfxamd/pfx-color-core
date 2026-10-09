@@ -51,11 +51,11 @@ fn radial(shape: CssRadialShape, size: CssRadialSize) -> CssGradientKind {
 #[test]
 fn real_pixel_aspect_ratio_changes_css_linear_angle_projection() {
     let diagonal = CssGradient::new(&stops(), options(linear(45.0))).unwrap();
-    close(diagonal.progress_at(0.0, 0.0).unwrap(), 0.0);
-    close(diagonal.progress_at(200.0, 100.0).unwrap(), 1.0);
-    close(diagonal.progress_at(0.0, 100.0).unwrap(), 1.0 / 3.0);
-    close(diagonal.progress_at(200.0, 0.0).unwrap(), 2.0 / 3.0);
-    let sample = diagonal.sample_pixel(0.0, 100.0).unwrap();
+    close(diagonal.progress_at(0.0, 0.0).unwrap(), 1.0 / 3.0);
+    close(diagonal.progress_at(200.0, 100.0).unwrap(), 2.0 / 3.0);
+    close(diagonal.progress_at(0.0, 100.0).unwrap(), 0.0);
+    close(diagonal.progress_at(200.0, 0.0).unwrap(), 1.0);
+    let sample = diagonal.sample_pixel(0.0, 0.0).unwrap();
     close(sample.color.channels()[0], 2.0 / 3.0);
     close(sample.color.channels()[2], 1.0 / 3.0);
     let horizontal = CssGradient::new(&stops(), options(linear(90.0))).unwrap();
