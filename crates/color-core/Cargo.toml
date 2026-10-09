@@ -1,0 +1,15 @@
+[package]
+name = "pfx-color-core"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.82"
+license = "Apache-2.0"
+description = "Independent, dependency-free color science core for PFx projects"
+repository = "https://github.com/pfxamd/pfx-color-core"
+publish = false
+
+[lib]
+name = "pfx_color_core"
+path = "src/lib.rs"
+
+[dependencies]

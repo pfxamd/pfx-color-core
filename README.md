@@ -57,3 +57,7 @@ Extraction baseline: [PFx Colors commit `4c2b63735af4`](https://github.com/pfxam
 ## License
 
 Apache-2.0. Copyright 2026 PFxamd.
+
+## Rust computational engine (in progress)
+
+A new dependency-free Rust engine is being developed in [`crates/color-core/`](crates/color-core/). It currently provides the mathematical foundation and reference-tested color-space conversions. The published `v0.1.0` and the PFx Colors UI continue using the existing TypeScript implementation. See [Rust migration plan](docs/rust-migration.md).

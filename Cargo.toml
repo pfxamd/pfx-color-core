@@ -1,0 +1,3 @@
+[workspace]
+members = ["crates/color-core"]
+resolver = "2"
