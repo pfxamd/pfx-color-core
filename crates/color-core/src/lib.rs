@@ -33,8 +33,11 @@ pub use gradients::{Gradient, GradientKind, GradientOptions, GradientSample, Gra
 pub use harmony::{
     generate_custom_harmony, generate_harmony, Harmony, HarmonyColor, HarmonyOptions, HarmonyScheme,
 };
+pub use images::{
+    extract_image_palette, ExtractedColor, ImageError, ImagePalette, ImagePaletteOptions,
+    ImageRegion, MAX_IMAGE_PALETTE_COLORS, MAX_IMAGE_SAMPLES,
+};
 pub use interpolation::{interpolate, HueMethod};
-pub use images::{extract_image_palette, ExtractedColor, ImageError, ImagePalette, ImagePaletteOptions, ImageRegion, MAX_IMAGE_PALETTE_COLORS, MAX_IMAGE_SAMPLES};
 pub use palettes::{
     anchored_palette, ramp_palette, tonal_palette, Palette, PaletteColor, PaletteMode, RampOptions,
     TonalOptions, MAX_PALETTE_COLORS,
