@@ -41,7 +41,6 @@ pub fn contrast_ratio(a: Color, b: Color) -> Result<f64, ColorError> {
     Ok((lighter + 0.05) / (darker + 0.05))
 }
 
-
 /// APCA-W3 0.1.9 Lc contrast, with foreground/background polarity.
 /// Unlike WCAG 2.2 this value is signed: positive for dark text on light
 /// background, negative for light text on dark background.
