@@ -8,6 +8,7 @@ export const ColorSpaces = Object.freeze({
   srgb: 0, "srgb-linear": 1, "display-p3": 2, "display-p3-linear": 3,
   rec2020: 4, "rec2020-linear": 5, "xyz-d65": 6, "xyz-d50": 7,
   lab: 8, lch: 9, oklab: 10, oklch: 11, hsl: 12, hwb: 13, hsv: 14,
+  "a98-rgb": 15, "prophoto-rgb": 16,
 });
 const SpaceNames = Object.freeze(Object.keys(ColorSpaces));
 const DifferenceMethods = Object.freeze({ cie76: 0, ciede2000: 1, ok: 2 });
