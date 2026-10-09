@@ -194,6 +194,11 @@ fn components(space: ColorSpace) -> [Component; 3] {
 /// Preserve individually analogous missing components and complete unmatched
 /// analogous sets only during interpolation. Alpha always carries forward.
 fn carry_mask(input: CssColor, destination: ColorSpace) -> u8 {
+    // Identical spaces preserve each explicitly missing channel, including
+    // HWB whiteness/blackness, which lack cross-space analogues.
+    if input.space() == destination {
+        return input.missing;
+    }
     let original = components(input.space());
     let target = components(destination);
     let mut result = input.missing & 8;
