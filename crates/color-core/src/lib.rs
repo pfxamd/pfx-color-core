@@ -12,8 +12,8 @@
 pub mod contrast;
 pub mod conversion;
 pub mod css;
-pub mod css_missing;
 pub mod css_expression;
+pub mod css_missing;
 pub mod cylindrical;
 pub mod difference;
 pub mod gamut;
