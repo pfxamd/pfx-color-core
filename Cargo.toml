@@ -1,3 +1,3 @@
 [workspace]
-members = ["crates/color-core"]
+members = ["crates/color-core", "crates/color-ffi"]
 resolver = "2"

@@ -1,0 +1,15 @@
+[package]
+name = "pfx-color-ffi"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.82"
+license = "Apache-2.0"
+publish = false
+description = "Zero-external-dependency C and WebAssembly ABI for PFx Color Core"
+
+[lib]
+name = "pfx_color_ffi"
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+pfx-color-core = { path = "../color-core" }
