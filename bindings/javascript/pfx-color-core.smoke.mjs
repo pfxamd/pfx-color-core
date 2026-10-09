@@ -322,7 +322,7 @@ test("CSS pixel gradient WASM uses real box geometry without altering legacy", (
   ], { kind: "linear", width: 240, height: 120, angle: 45,
        space: "srgb", target: "srgb", gamut: "clip" });
   try {
-    const at = grad.samplePixel(0, 120);
+    const at = grad.samplePixel(0, 0);
     at.channels.forEach(channel => assert.ok(Math.abs(channel - 1 / 3) < 1e-10));
     assert.ok(Math.abs(grad.sampleProgress(0.5).channels[0] - 0.5) < 1e-12);
     assert.throws(() => grad.samplePixel(NaN, 20), /finite/);
