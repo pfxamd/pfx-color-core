@@ -38,7 +38,7 @@ in both implementations. Passing the gate does **not** imply parity elsewhere. W
 | Arbitrary anchored palettes/custom harmony in WASM ABI | Implemented in Rust, C ABI and WASM with owned builders | Eligible for parity checking; no production UI switch |
 | Seeded 10-color Color Study | Ported to Rust with first-party deterministic PRNG; seeded WASM-vs-TypeScript perceptual parity tests passed | Keep TypeScript app until browser/UI integration tests pass |
 | Color-picker selection, channel editing and normalized hex | Opt-in Rust-backed JavaScript adapter with real baseline comparisons | Test independently; keep production UI on TypeScript until browser parity |
-| Workspace mutations and undo/redo | Not ported | Keep TypeScript |
+| Workspace mutations and undo/redo | Opt-in Rust-powered JS workspace implemented with regression tests | Keep deployed UI unchanged until browser-level tests and full feature parity |
 | Optional image extraction | Not ported to Rust | Keep existing image adapter |
 
 ## Transition principles

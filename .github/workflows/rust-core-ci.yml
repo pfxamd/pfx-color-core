@@ -47,6 +47,8 @@ jobs:
         run: node --test bindings/javascript/legacy-parity.smoke.mjs
       - name: Verify opt-in Rust color-picker interface against legacy
         run: node --test bindings/javascript/pfx-color-tools.smoke.mjs
+      - name: Verify opt-in Rust workspace state against existing app semantics
+        run: node --test bindings/javascript/pfx-color-workspace.smoke.mjs
       - name: Bundle tested standalone WebAssembly engine
         uses: actions/upload-artifact@v4
         with:
