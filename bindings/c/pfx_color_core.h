@@ -119,8 +119,6 @@ double pfx_color_get_alpha(const PfxColor *color);
 int32_t pfx_color_convert(const PfxColor *color, uint32_t target, PfxColor *out);
 double pfx_color_difference(const PfxColor *a, const PfxColor *b, uint32_t method);
 double pfx_color_contrast(const PfxColor *a, const PfxColor *b);
-/* Signed APCA-W3 Lc, foreground first; not a WCAG contrast ratio. */
-double pfx_color_apca(const PfxColor *foreground, const PfxColor *background);
 double pfx_color_luminance(const PfxColor *color);
 int32_t pfx_color_is_in_gamut(const PfxColor *color, uint32_t target);
 int32_t pfx_color_map(
