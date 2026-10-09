@@ -44,6 +44,31 @@ function wrapPalette(mode, result, tools) {
  * A separate opt-in workspace with the existing getState/undo/redo semantics.
  * Not a drop-in production swap; CSS gradient rendering is still legacy.
  */
+/**
+ * Render CSS gradient syntax from typed Rust-backed workspace data.
+ * Geometry formatting only; color interpolation remains inside Rust.
+ */
+export function pfxGradientToCss(definition) {
+  if (!definition || !Array.isArray(definition.stops) || definition.stops.length < 2) {
+    throw new TypeError("Gradient definition with at least 2 stops required");
+  }
+  const interpolation = "in " + coreSpace(definition.interpolationSpace)
+    + (definition.hue ? " " + definition.hue + " hue" : "");
+  const percent = value => String(Math.round(value * 10000) / 100) + "%";
+  const stops = definition.stops.map(stop =>
+    stop.value.css + " " + percent(stop.position)).join(", ");
+  const center = percent(definition.centerX) + " " + percent(definition.centerY);
+  if (definition.type === "radial") {
+    return "radial-gradient(circle at " + center + " " + interpolation + ", " + stops + ")";
+  }
+  if (definition.type === "conic") {
+    return "conic-gradient(from " + definition.angle + "deg at " + center
+      + " " + interpolation + ", " + stops + ")";
+  }
+  return "linear-gradient(" + definition.angle + "deg " + interpolation
+    + ", " + stops + ")";
+}
+
 export function createPfxColorsWorkspace(core, initialColor = "#ff0014", historyLimit = 100) {
   checkedHistory(historyLimit);
   const tools = createPfxColorTools(core);

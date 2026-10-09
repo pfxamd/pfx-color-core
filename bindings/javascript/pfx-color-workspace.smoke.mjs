@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { PfxColorsWorkspace } from "../../dist/index.js";
 import { createPfxColorCore } from "./pfx-color-core.mjs";
-import { createPfxColorsWorkspace } from "./pfx-color-workspace.mjs";
+import { createPfxColorsWorkspace, pfxGradientToCss } from "./pfx-color-workspace.mjs";
 
 const bytes = await readFile(new URL(
   "../../target/wasm32-unknown-unknown/release/pfx_color_ffi.wasm",
@@ -72,4 +72,20 @@ test("Rust opt-in workspace respects limits and invalid operations", () => {
     { color: "#000000", position: 0 },
     { color: "#ffffff", position: 2 },
   ]), /position/);
+});
+
+test("workspace serializes valid linear radial and conic CSS gradient geometry", () => {
+  const stops = [
+    { color: "#ff0000", position: 0 },
+    { color: "#0000ff", position: 1 },
+  ];
+  const linear = fresh();
+  linear.createGradient(stops, { type: "linear", angle: 90 });
+  assert.match(pfxGradientToCss(linear.getState().gradient), /^linear-gradient\(90deg in oklch,/);
+  const radial = fresh();
+  radial.createGradient(stops, { type: "radial", centerX: 0.25, centerY: 0.75 });
+  assert.ok(pfxGradientToCss(radial.getState().gradient).includes("circle at 25% 75% in oklch"));
+  const conic = fresh();
+  conic.createGradient(stops, { type: "conic", angle: 45, centerX: 0.2, centerY: 0.3 });
+  assert.ok(pfxGradientToCss(conic.getState().gradient).includes("from 45deg at 20% 30% in oklch"));
 });

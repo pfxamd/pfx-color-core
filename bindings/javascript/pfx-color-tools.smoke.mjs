@@ -67,3 +67,20 @@ test("opt-in Rust picker rejects missing channels and invalid indices", () => {
   assert.throws(() => picker.setColorChannel("#fff", "hsl", 5, 20), /Channel index/);
   assert.throws(() => picker.setColorAlpha("#fff", Number.NaN), /finite/);
 });
+
+test("optional Rust Color Study bridge matches Home output shape and seed", () => {
+  const a = picker.generateColorStudy("#336699", { randomSeed: 2345 });
+  const b = picker.generateColorStudy("#336699", { randomSeed: 2345 });
+  assert.deepEqual(a, b);
+  assert.equal(a.colors.length, 10);
+  assert.equal(a.seedHex, "#336699");
+  assert.deepEqual(a.controls,
+    { lightness: 58, chroma: 58, hueRange: 58, toneRange: 58 });
+  for (const item of a.colors) {
+    assert.equal(item.value.hex, item.hex);
+    assert.ok(/^#[0-9a-f]{6,8}$/.test(item.hex));
+    assert.equal(item.value.space, "srgb");
+  }
+  assert.throws(() => picker.generateColorStudy("#336699", { randomSeed: -1 }),
+    /randomSeed/);
+});

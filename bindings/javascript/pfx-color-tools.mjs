@@ -82,6 +82,45 @@ export function createPfxColorTools(core) {
       if (!Number.isFinite(alpha)) throw new TypeError("Alpha must be finite");
       return selectColor({ ...normalize(input), alpha: Math.min(1, Math.max(0, alpha)) });
     },
+    /**
+     * Rust-powered version of the Home panel's deterministic 10-color study.
+     * All color calculations are in Rust; the seed controls its PRNG.
+     */
+    generateColorStudy(input, options = {}) {
+      const source = normalize(input);
+      const seed = options.randomSeed ?? Math.floor(Math.random() * 4294967296);
+      if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) {
+        throw new RangeError("randomSeed must be a 32-bit unsigned integer");
+      }
+      const clampControl = (value, label) => {
+        if (!Number.isFinite(value)) throw new TypeError(label + " must be finite");
+        return Math.min(100, Math.max(0, value));
+      };
+      const controls = {
+        lightness: clampControl(options.lightness ?? 58, "lightness"),
+        chroma: clampControl(options.chroma ?? 58, "chroma"),
+        hueRange: clampControl(options.hueRange ?? 58, "hueRange"),
+        toneRange: clampControl(options.toneRange ?? 58, "toneRange"),
+      };
+      const study = core.colorStudy(source, {
+        ...controls,
+        randomSeed: seed,
+        target: toCore(options.targetSpace ?? "srgb"),
+        gamut: "css",
+      });
+      return {
+        seedHex: formatHex(source),
+        scheme: study.scheme === "splitComplementary" ? "split-complementary" : study.scheme,
+        controls,
+        colors: study.colors.map(entry => ({
+          index: entry.index,
+          hex: formatHex(entry.color),
+          value: value(entry.color),
+          oklch: { l: entry.oklch[0], c: entry.oklch[1], h: entry.oklch[2] },
+          mapped: entry.mapped,
+        })),
+      };
+    },
     mapColorToGamut(input, target = "srgb") {
       return selectColor(core.mapGamut(normalize(input), toCore(target), "css"));
     },
