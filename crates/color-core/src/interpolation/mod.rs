@@ -71,7 +71,11 @@ pub fn interpolate(
     let polar = matches!(space, ColorSpace::Lch | ColorSpace::Oklch);
     if polar {
         // CSS powerless-hue cutoffs, scaled to the lightness range.
-        let epsilon = if space == ColorSpace::Oklch { 4e-6 } else { 4e-4 };
+        let epsilon = if space == ColorSpace::Oklch {
+            4e-6
+        } else {
+            4e-4
+        };
         if a[1].abs() < epsilon || from.alpha() == 0.0 {
             a[2] = b[2];
         }
@@ -85,8 +89,7 @@ pub fn interpolate(
     let mut mixed = [0.0; 3];
     for i in 0..3 {
         if polar && i == 2 {
-            mixed[i] = (a[i] + hue_delta(a[i], b[i], hue_method) * fraction)
-                .rem_euclid(360.0);
+            mixed[i] = (a[i] + hue_delta(a[i], b[i], hue_method) * fraction).rem_euclid(360.0);
         } else {
             let numerator = a[i] * weight_a + b[i] * weight_b;
             mixed[i] = if alpha == 0.0 {

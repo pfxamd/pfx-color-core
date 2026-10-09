@@ -92,8 +92,7 @@ fn ciede2000(a: [f64; 3], b: [f64; 3]) -> f64 {
         (h1_prime + h2_prime - 360.0) / 2.0
     };
 
-    let t = 1.0
-        - 0.17 * cos_degrees(h_bar_prime - 30.0)
+    let t = 1.0 - 0.17 * cos_degrees(h_bar_prime - 30.0)
         + 0.24 * cos_degrees(2.0 * h_bar_prime)
         + 0.32 * cos_degrees(3.0 * h_bar_prime + 6.0)
         - 0.20 * cos_degrees(4.0 * h_bar_prime - 63.0);
@@ -103,9 +102,8 @@ fn ciede2000(a: [f64; 3], b: [f64; 3]) -> f64 {
     let r_c = 2.0 * (c_bar_prime_7 / (c_bar_prime_7 + 25.0_f64.powi(7))).sqrt();
     let r_t = -sin_degrees(2.0 * delta_theta) * r_c;
 
-    let s_l = 1.0
-        + 0.015 * (l_bar_prime - 50.0).powi(2)
-            / (20.0 + (l_bar_prime - 50.0).powi(2)).sqrt();
+    let s_l =
+        1.0 + 0.015 * (l_bar_prime - 50.0).powi(2) / (20.0 + (l_bar_prime - 50.0).powi(2)).sqrt();
     let s_c = 1.0 + 0.045 * c_bar_prime;
     let s_h = 1.0 + 0.015 * c_bar_prime * t;
     let l_term = delta_l / s_l;

@@ -1,6 +1,6 @@
 use pfx_color_core::{
-    contrast_ratio, difference, interpolate, is_in_gamut, map_to_gamut, relative_luminance,
-    Color, ColorError, ColorSpace, DifferenceMethod, GamutMap, HueMethod,
+    contrast_ratio, difference, interpolate, is_in_gamut, map_to_gamut, relative_luminance, Color,
+    ColorError, ColorSpace, DifferenceMethod, GamutMap, HueMethod,
 };
 
 fn color(space: ColorSpace, coordinates: [f64; 3]) -> Color {
@@ -18,8 +18,16 @@ fn approx(actual: f64, expected: f64, tolerance: f64) {
 fn cie76_and_ok_distance_are_euclidean_and_symmetric() {
     let a = color(ColorSpace::Lab, [50.0, 0.0, 0.0]);
     let b = color(ColorSpace::Lab, [53.0, 4.0, 0.0]);
-    approx(difference(a, b, DifferenceMethod::Cie76).unwrap(), 5.0, 1e-12);
-    approx(difference(b, a, DifferenceMethod::Cie76).unwrap(), 5.0, 1e-12);
+    approx(
+        difference(a, b, DifferenceMethod::Cie76).unwrap(),
+        5.0,
+        1e-12,
+    );
+    approx(
+        difference(b, a, DifferenceMethod::Cie76).unwrap(),
+        5.0,
+        1e-12,
+    );
 
     let x = color(ColorSpace::Oklab, [0.5, 0.0, 0.0]);
     let y = color(ColorSpace::Oklab, [0.5, 0.3, 0.4]);
@@ -93,8 +101,14 @@ fn interpolation_uses_premultiplied_alpha() {
     assert_eq!(mid.channels(), [0.0, 0.0, 1.0]);
     approx(mid.alpha(), 0.5, 0.0);
     assert_eq!(
-        interpolate(transparent_red, blue, 0.0, ColorSpace::Srgb, HueMethod::Shorter)
-            .unwrap(),
+        interpolate(
+            transparent_red,
+            blue,
+            0.0,
+            ColorSpace::Srgb,
+            HueMethod::Shorter
+        )
+        .unwrap(),
         transparent_red
     );
 }
@@ -114,8 +128,7 @@ fn hue_arcs_and_powerless_hues_are_explicit() {
 
     let neutral = color(ColorSpace::Oklch, [0.6, 0.0, 0.0]);
     let tinted = color(ColorSpace::Oklch, [0.6, 0.2, 250.0]);
-    let mixed = interpolate(neutral, tinted, 0.5, ColorSpace::Oklch, HueMethod::Shorter)
-        .unwrap();
+    let mixed = interpolate(neutral, tinted, 0.5, ColorSpace::Oklch, HueMethod::Shorter).unwrap();
     approx(mixed.channels()[2], 250.0, 1e-12);
 }
 

@@ -42,7 +42,9 @@ impl fmt::Display for ColorError {
             Self::NonFiniteResult => f.write_str("conversion produced a non-finite channel"),
             Self::RequiresOpaque => f.write_str("WCAG contrast requires opaque colors"),
             Self::OutOfGamut => f.write_str("color is outside the sRGB reference gamut"),
-            Self::InvalidFraction => f.write_str("interpolation fraction must be finite and between 0 and 1"),
+            Self::InvalidFraction => {
+                f.write_str("interpolation fraction must be finite and between 0 and 1")
+            }
         }
     }
 }
