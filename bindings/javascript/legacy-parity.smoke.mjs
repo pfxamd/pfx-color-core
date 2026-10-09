@@ -44,6 +44,7 @@ const epsilon = {
   "xyz-d65": 0.0003,
   "xyz-d50": 0.0003,
   lab: 0.06,
+  "lab-d65": 0.06,
   lch: 0.06,
   oklab: 0.0005,
   oklch: 0.0005,
