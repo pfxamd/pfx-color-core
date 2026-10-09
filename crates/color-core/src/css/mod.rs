@@ -198,8 +198,16 @@ fn function(input: &str) -> Result<Color, ColorError> {
                 number_or_percent(c, 255.0)? / 255.0,
             ]
         }
-        ColorSpace::Hsl => [angle_component(a)?, required_percent(b)?, required_percent(c)?],
-        ColorSpace::Hwb => [angle_component(a)?, required_percent(b)?, required_percent(c)?],
+        ColorSpace::Hsl => [
+            angle_component(a)?,
+            required_percent(b)?,
+            required_percent(c)?,
+        ],
+        ColorSpace::Hwb => [
+            angle_component(a)?,
+            required_percent(b)?,
+            required_percent(c)?,
+        ],
         ColorSpace::Lab => [
             number_or_percent(a, 100.0)?.clamp(0.0, 100.0),
             number_or_percent(b, 125.0)?,
@@ -226,10 +234,14 @@ fn function(input: &str) -> Result<Color, ColorError> {
             number_or_percent(c, 1.0)?,
         ],
     };
-    Color::new(space, channels, match alpha {
-        Some(value) => alpha_component(value)?,
-        None => 1.0,
-    })
+    Color::new(
+        space,
+        channels,
+        match alpha {
+            Some(value) => alpha_component(value)?,
+            None => 1.0,
+        },
+    )
 }
 
 fn named_color(input: &str) -> Option<&'static str> {
@@ -292,7 +304,10 @@ pub fn format_css(input: Color) -> Result<String, ColorError> {
     let [a, b, c] = input.channels();
     let alpha = input.alpha();
     Ok(match input.space() {
-        ColorSpace::Srgb => format!("rgb({})", with_alpha(format!("{} {} {}", a * 255.0, b * 255.0, c * 255.0), alpha)),
+        ColorSpace::Srgb => format!(
+            "rgb({})",
+            with_alpha(format!("{} {} {}", a * 255.0, b * 255.0, c * 255.0), alpha)
+        ),
         ColorSpace::Hsl => format!("hsl({})", with_alpha(format!("{a} {b}% {c}%"), alpha)),
         ColorSpace::Hwb => format!("hwb({})", with_alpha(format!("{a} {b}% {c}%"), alpha)),
         ColorSpace::Lab => format!("lab({})", with_alpha(format!("{a} {b} {c}"), alpha)),
@@ -310,7 +325,10 @@ pub fn format_css(input: Color) -> Result<String, ColorError> {
                 // serialization, not claimed to have a CSS color() id.
                 _ => return format_css(input.to(ColorSpace::Srgb)?),
             };
-            format!("color({name} {})", with_alpha(format!("{a} {b} {c}"), alpha))
+            format!(
+                "color({name} {})",
+                with_alpha(format!("{a} {b} {c}"), alpha)
+            )
         }
     })
 }
@@ -325,6 +343,12 @@ pub fn format_hex(input: Color, mapping: GamutMap) -> Result<String, ColorError>
     if input.alpha() == 1.0 {
         Ok(format!("#{:02x}{:02x}{:02x}", byte(r), byte(g), byte(b)))
     } else {
-        Ok(format!("#{:02x}{:02x}{:02x}{:02x}", byte(r), byte(g), byte(b), byte(input.alpha())))
+        Ok(format!(
+            "#{:02x}{:02x}{:02x}{:02x}",
+            byte(r),
+            byte(g),
+            byte(b),
+            byte(input.alpha())
+        ))
     }
 }

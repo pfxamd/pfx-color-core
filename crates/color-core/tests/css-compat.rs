@@ -1,6 +1,4 @@
-use pfx_color_core::{
-    format_css, format_hex, parse_css, Color, ColorError, ColorSpace, GamutMap,
-};
+use pfx_color_core::{format_css, format_hex, parse_css, Color, ColorError, ColorSpace, GamutMap};
 
 fn near(a: f64, b: f64, e: f64) {
     assert!((a - b).abs() <= e, "expected {b}, actual {a}");
@@ -24,10 +22,19 @@ fn hex_short_long_and_alpha_are_specified() {
         let c = parse_css(source).unwrap();
         rgb(c, rgb_value);
         near(c.alpha(), alpha, 0.0);
-        assert_eq!(format_hex(c, GamutMap::Clip).unwrap().len(), if alpha == 1.0 { 7 } else { 9 });
+        assert_eq!(
+            format_hex(c, GamutMap::Clip).unwrap().len(),
+            if alpha == 1.0 { 7 } else { 9 }
+        );
     }
-    assert_eq!(format_hex(parse_css("#f06").unwrap(), GamutMap::Clip).unwrap(), "#ff0066");
-    assert_eq!(format_hex(parse_css("#f068").unwrap(), GamutMap::Clip).unwrap(), "#ff006688");
+    assert_eq!(
+        format_hex(parse_css("#f06").unwrap(), GamutMap::Clip).unwrap(),
+        "#ff0066"
+    );
+    assert_eq!(
+        format_hex(parse_css("#f068").unwrap(), GamutMap::Clip).unwrap(),
+        "#ff006688"
+    );
 }
 
 #[test]
@@ -43,8 +50,14 @@ fn rgb_legacy_modern_percent_and_alpha() {
         rgb(c, [1.0, 0.0, 0.0]);
         near(c.alpha(), 0.5, 0.0);
     }
-    rgb(parse_css("rgb(300 -1 0)").unwrap(), [300.0 / 255.0, -1.0 / 255.0, 0.0]);
-    assert_eq!(parse_css("rgba(255, 0%, 0, 0.5)"), Err(ColorError::InvalidSyntax));
+    rgb(
+        parse_css("rgb(300 -1 0)").unwrap(),
+        [300.0 / 255.0, -1.0 / 255.0, 0.0],
+    );
+    assert_eq!(
+        parse_css("rgba(255, 0%, 0, 0.5)"),
+        Err(ColorError::InvalidSyntax)
+    );
 }
 
 #[test]
@@ -52,16 +65,26 @@ fn hsl_hwb_hue_units_and_conversion() {
     for source in [
         "hsl(120 100% 50%)",
         "hsl(1/3turn 100% 50%)", // accepted? invalid CSS math; checked separately below
-    ].iter().take(1) {
+    ]
+    .iter()
+    .take(1)
+    {
         rgb(parse_css(source).unwrap(), [0.0, 1.0, 0.0]);
     }
-    for source in ["hsl(120deg 100% 50%)", "hsla(120, 100%, 50%, 1)", "hsl(0.3333333333333333turn 100% 50%)"] {
+    for source in [
+        "hsl(120deg 100% 50%)",
+        "hsla(120, 100%, 50%, 1)",
+        "hsl(0.3333333333333333turn 100% 50%)",
+    ] {
         let c = parse_css(source).unwrap();
         rgb(c, [0.0, 1.0, 0.0]);
     }
     rgb(parse_css("hwb(240 0% 0%)").unwrap(), [0.0, 0.0, 1.0]);
     rgb(parse_css("hwb(60 60% 60%)").unwrap(), [0.5, 0.5, 0.5]);
-    assert_eq!(parse_css("hsl(1/3turn 100% 50%)"), Err(ColorError::InvalidSyntax));
+    assert_eq!(
+        parse_css("hsl(1/3turn 100% 50%)"),
+        Err(ColorError::InvalidSyntax)
+    );
     assert_eq!(parse_css("hsl(30,40,50)"), Err(ColorError::InvalidSyntax));
 }
 
@@ -101,8 +124,14 @@ fn specified_css_modern_spaces_are_parsed_with_percent_reference_ranges() {
 
 #[test]
 fn common_names_transparent_and_css_round_trip() {
-    assert_eq!(format_hex(parse_css("rebeccapurple").unwrap(), GamutMap::Clip).unwrap(), "#663399");
-    assert_eq!(format_hex(parse_css("TRANSPARENT").unwrap(), GamutMap::Clip).unwrap(), "#00000000");
+    assert_eq!(
+        format_hex(parse_css("rebeccapurple").unwrap(), GamutMap::Clip).unwrap(),
+        "#663399"
+    );
+    assert_eq!(
+        format_hex(parse_css("TRANSPARENT").unwrap(), GamutMap::Clip).unwrap(),
+        "#00000000"
+    );
     for source in [
         "#2e4a9bca",
         "rgb(10.5 20.7 30.2 / 0.8)",
@@ -129,13 +158,27 @@ fn common_names_transparent_and_css_round_trip() {
 #[test]
 fn malformed_or_unsupported_css_is_rejected() {
     for source in [
-        "", "#f", "#abcdefe", "#ggff00", "rgb()", "rgb(1 2)", "rgb(1 2 3 4)",
-        "rgb(1, 2 3)", "rgb(1 2 3 / 0.5 / 0.5)", "rgb(1 2 3) garbage",
-        "hsl(20 50 50)", "color(display-p3 1 2)",
-        "rgb(none 0 0)", "oklch(0.5 none 10)", "color(srgb 1 var(--g) 0)",
-        "color(from red srgb r g b)", "rgb(calc(20 + 5) 0 0)",
-        "color(prophoto-rgb 1 0 0)", "hwb(10, 0%, 0%)",
-        "rgb(NaN 0 0)", "rgb(inf 0 0)",
+        "",
+        "#f",
+        "#abcdefe",
+        "#ggff00",
+        "rgb()",
+        "rgb(1 2)",
+        "rgb(1 2 3 4)",
+        "rgb(1, 2 3)",
+        "rgb(1 2 3 / 0.5 / 0.5)",
+        "rgb(1 2 3) garbage",
+        "hsl(20 50 50)",
+        "color(display-p3 1 2)",
+        "rgb(none 0 0)",
+        "oklch(0.5 none 10)",
+        "color(srgb 1 var(--g) 0)",
+        "color(from red srgb r g b)",
+        "rgb(calc(20 + 5) 0 0)",
+        "color(prophoto-rgb 1 0 0)",
+        "hwb(10, 0%, 0%)",
+        "rgb(NaN 0 0)",
+        "rgb(inf 0 0)",
     ] {
         assert!(parse_css(source).is_err(), "unexpected parse: {source}");
     }

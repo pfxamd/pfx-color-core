@@ -7,7 +7,9 @@
 //! The pipeline routes through XYZ D65, adapting to/from D50 only as needed.
 //! RGB channels are not clipped; all intermediate calculations are f64.
 
-use crate::cylindrical::{hsl_to_srgb, hwb_to_srgb, hsv_to_srgb, srgb_to_hsl, srgb_to_hwb, srgb_to_hsv};
+use crate::cylindrical::{
+    hsl_to_srgb, hsv_to_srgb, hwb_to_srgb, srgb_to_hsl, srgb_to_hsv, srgb_to_hwb,
+};
 use crate::math::{decode_rec2020, decode_srgb, encode_rec2020, encode_srgb, Matrix3, D50};
 use crate::spaces::{Color, ColorError, ColorSpace};
 

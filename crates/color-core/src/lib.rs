@@ -10,9 +10,9 @@
 //! https://www.w3.org/TR/2026/CRD-css-color-4-20260901/
 
 pub mod contrast;
+pub mod conversion;
 pub mod css;
 pub mod cylindrical;
-pub mod conversion;
 pub mod difference;
 pub mod gamut;
 pub mod gradients;
@@ -23,8 +23,8 @@ pub mod palettes;
 pub mod spaces;
 
 pub use contrast::{contrast_ratio, relative_luminance};
-pub use css::{format_css, format_hex, parse_css};
 pub use conversion::convert;
+pub use css::{format_css, format_hex, parse_css};
 pub use difference::{difference, DifferenceMethod};
 pub use gamut::{is_in_gamut, map_to_gamut, GamutMap};
 pub use gradients::{Gradient, GradientKind, GradientOptions, GradientSample, GradientStop};

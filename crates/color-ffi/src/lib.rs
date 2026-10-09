@@ -10,10 +10,10 @@
 //! C/WASM/JS callers must use ABI revision pfx_abi_version() == 1.
 
 use pfx_color_core::{
-    contrast_ratio, difference, generate_harmony, interpolate, is_in_gamut, map_to_gamut,
-    ramp_palette, relative_luminance, tonal_palette, Color, ColorSpace, DifferenceMethod, GamutMap,
-    Gradient, GradientKind, GradientOptions, GradientStop, HarmonyOptions, HarmonyScheme,
-    HueMethod, Palette, RampOptions, TonalOptions, format_css, format_hex, parse_css,
+    contrast_ratio, difference, format_css, format_hex, generate_harmony, interpolate, is_in_gamut,
+    map_to_gamut, parse_css, ramp_palette, relative_luminance, tonal_palette, Color, ColorSpace,
+    DifferenceMethod, GamutMap, Gradient, GradientKind, GradientOptions, GradientStop,
+    HarmonyOptions, HarmonyScheme, HueMethod, Palette, RampOptions, TonalOptions,
 };
 
 const NULL: i32 = -1;
@@ -657,7 +657,6 @@ pub unsafe extern "C" fn pfx_gradient_free(ptr: *mut PfxGradient) {
     }
 }
 
-
 /// Allocate a byte buffer owned by Rust for input/output across the WASM ABI.
 /// The caller MUST release it with pfx_buffer_free(ptr, SAME_SIZE).
 /// Returns null for zero, oversized or invalid size.
@@ -678,7 +677,10 @@ pub unsafe extern "C" fn pfx_buffer_free(ptr: *mut u8, length: u32) {
         if length == 0 || length > 2048 {
             return;
         }
-        drop(Box::from_raw(std::ptr::slice_from_raw_parts_mut(ptr, length as usize)));
+        drop(Box::from_raw(std::ptr::slice_from_raw_parts_mut(
+            ptr,
+            length as usize,
+        )));
     }
 }
 
@@ -688,11 +690,7 @@ pub unsafe extern "C" fn pfx_buffer_free(ptr: *mut u8, length: u32) {
 /// data must be a live, readable byte pointer to length bytes.
 /// out must be a live, writable PfxColor pointer.
 #[no_mangle]
-pub unsafe extern "C" fn pfx_css_parse(
-    data: *const u8,
-    length: u32,
-    out: *mut PfxColor,
-) -> i32 {
+pub unsafe extern "C" fn pfx_css_parse(data: *const u8, length: u32, out: *mut PfxColor) -> i32 {
     if data.is_null() || out.is_null() {
         return NULL;
     }
