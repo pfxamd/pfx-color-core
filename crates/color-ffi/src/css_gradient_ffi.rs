@@ -200,7 +200,8 @@ pub unsafe extern "C" fn pfx_css_gradient_raster_rgba8(
     let result = (|| {
         let handle = gradient.as_ref().ok_or(NULL)?;
         let count = (width as usize).checked_mul(height as usize).ok_or(COLOR)?;
-        if count == 0 || count > MAX_RASTER_PIXELS
+        if count == 0
+            || count > MAX_RASTER_PIXELS
             || handle.options.width != width as f64
             || handle.options.height != height as f64
         {
@@ -210,8 +211,10 @@ pub unsafe extern "C" fn pfx_css_gradient_raster_rgba8(
         let mut pixels = Vec::with_capacity(count * 4);
         for y in 0..height {
             for x in 0..width {
-                let sample = gradient.sample_pixel(x as f64 + 0.5, y as f64 + 0.5)
-                    .map_err(|_| COLOR)?.color;
+                let sample = gradient
+                    .sample_pixel(x as f64 + 0.5, y as f64 + 0.5)
+                    .map_err(|_| COLOR)?
+                    .color;
                 let color = if sample.space() == ColorSpace::Srgb {
                     sample
                 } else {
@@ -233,7 +236,9 @@ pub unsafe extern "C" fn pfx_css_gradient_raster_rgba8(
 /// pfx_css_gradient_raster_rgba8, not previously freed.
 #[no_mangle]
 pub unsafe extern "C" fn pfx_css_raster_ptr(raster: *const PfxCssRaster) -> *const u8 {
-    raster.as_ref().map_or(std::ptr::null(), |image| image.pixels.as_ptr())
+    raster
+        .as_ref()
+        .map_or(std::ptr::null(), |image| image.pixels.as_ptr())
 }
 
 /// # Safety
