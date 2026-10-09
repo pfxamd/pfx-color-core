@@ -28,7 +28,9 @@ pub mod study;
 pub use contrast::{contrast_ratio, relative_luminance};
 pub use conversion::convert;
 pub use css::{format_css, format_hex, parse_css};
-pub use css_missing::{format_css_missing, interpolate_css_missing, parse_css_missing, CssColor, MISSING_ALL};
+pub use css_missing::{
+    format_css_missing, interpolate_css_missing, parse_css_missing, CssColor, MISSING_ALL,
+};
 pub use difference::{difference, DifferenceMethod};
 pub use gamut::{is_in_gamut, map_to_gamut, GamutMap};
 pub use gradients::{Gradient, GradientKind, GradientOptions, GradientSample, GradientStop};
