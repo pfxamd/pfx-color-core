@@ -8,6 +8,7 @@ Independent, first-party color mathematics, design tools and portable interfaces
 - CIE76, CIEDE2000 and Delta-E OK; **opaque in-gamut sRGB** WCAG 2.2 contrast
 - Premultiplied-alpha interpolation with shorter/longer/increasing/decreasing/**raw** hue paths, HSL/HWB/HSV powerless-hue treatment and explicit gamut checking/mapping
 - Deterministic tonal/ramp/anchored palettes, named/custom harmonies, seeded 10-color Color Study, and 2–256-stop linear/radial/conic **unit-square** gradient sampling
+- Independent opt-in CSS pixel-gradient engine: real dimensions, linear/conic directions, ellipse/circle radial geometry, CSS keyword/explicit radii, signed stop positions, hard-stop ordering, repeating including premultiplied zero-period average; accessible from C and Rust WASM without disturbing the existing gradient API
 - Opt-in first-party `css_expression.rs`: a bounded subset of typed `calc()` arithmetic and relative CSS colors, with numeric channel references, nested origins, explicit angle/percentage units, overflow and invalid-dimension rejection; no third-party parser
 - Opt-in `CssColor` missing-component API: preserve `none` channel/alpha masks, modern absolute-color round trips, analogous-set interpolation and zero-filled numeric conversion without modifying the existing `Color` type
 - Absolute CSS color parsing/formatting: HEX, legacy/modern RGB and HSL, HWB, Lab/LCH, OKLab/OKLCH, supported `color()` spaces, 148 named colors and `transparent`
@@ -39,7 +40,7 @@ The [Rust CI workflow](../../.github/workflows/rust-core-ci.yml) additionally ch
 
 - Full CSS Color 4 grammar: `none`, basic typed `calc()` and literal-origin relative colors are implemented in the **separate opt-in CSS API**. External `var()`, `currentColor`, other CSS math functions, full Color 4 resolution and integration with the legacy picker/workspace or arbitrary gradients remain unsupported
 - Specialized spaces/algorithms such as OKHSL/OKHSV, Delta-E ITP, Jz/HCT; APCA is **excluded** from this Apache-2.0 Rust engine pending licensing/integration review
-- Pixel-accurate CSS gradient geometry and rendering for arbitrary box dimensions and shapes
+- **Full** CSS gradient parsing/rendering conformance: optional/dual stops, color hints, degenerate radial shapes, general CSS image grammar, subpixel period/dithering guarantees and real-UI integration. Representative pixel-sized CSS gradients are now compared to screenshots in Chromium/Firefox, but that is not exhaustive pixel-exact conformance.
 - Compressed PNG/JPEG/WebP decoding, ICC color management or guaranteed ColorThief visual equivalence (the **decoded RGBA8 extractor is implemented**)
 - Complete production React UI parity and native Windows/macOS validation; a stable Rust/FFI production release
 
