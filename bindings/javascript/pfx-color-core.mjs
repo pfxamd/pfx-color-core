@@ -171,6 +171,79 @@ export async function createPfxColorCore(wasm) {
     formatHex(color, method = "css") {
       return formatText(color, 1, code(GamutMethods, method, "gamut method"));
     },
+    /**
+     * Extract dominant colors using the real Rust Oklab histogram engine.
+     * Supply decoded, row-major, UNPREMULTIPLIED RGBA8 pixels; browser
+     * ImageData.data can be passed directly. Encoded PNG/JPEG bytes are not
+     * supported and must first be decoded by the hosting application.
+     */
+    extractImagePalette(pixels, width, height, options = {}) {
+      const integer = (value, min, max, name) => {
+        if (!Number.isSafeInteger(value) || value < min || value > max) {
+          throw new RangeError(name + " must be an integer in " + min + ".." + max);
+        }
+        return value;
+      };
+      integer(width, 1, 0xffffffff, "width");
+      integer(height, 1, 0xffffffff, "height");
+      const byteCount = width * height * 4;
+      if (!Number.isSafeInteger(byteCount) || byteCount > 64 * 1024 * 1024) {
+        throw new RangeError("Decoded RGBA image must be at most 64 MiB");
+      }
+      if (!(pixels instanceof Uint8Array || pixels instanceof Uint8ClampedArray)
+          || pixels.byteLength !== byteCount) {
+        throw new TypeError("Image pixels must be RGBA8 Uint8Array or Uint8ClampedArray of width*height*4 bytes");
+      }
+      const count = integer(options.count ?? 6, 1, 32, "count");
+      const stride = integer(options.stride ?? 1, 1, 0xffffffff, "stride");
+      const maxSamples = integer(options.maxSamples ?? 80000, 1, 500000, "maxSamples");
+      const alpha = integer(options.alphaThreshold ?? 128, 0, 255, "alphaThreshold");
+      const ignoreWhite = options.ignoreNearWhite ?? false;
+      if (typeof ignoreWhite !== "boolean") {
+        throw new TypeError("ignoreNearWhite must be a boolean");
+      }
+      let regionX = 0, regionY = 0, regionWidth = 0, regionHeight = 0;
+      if (options.region != null) {
+        const r = options.region;
+        if (typeof r !== "object") throw new TypeError("region must be an object");
+        regionX = integer(r.x, 0, width - 1, "region.x");
+        regionY = integer(r.y, 0, height - 1, "region.y");
+        regionWidth = integer(r.width, 1, width - regionX, "region.width");
+        regionHeight = integer(r.height, 1, height - regionY, "region.height");
+      }
+      if (typeof e.pfx_image_new !== "function" || typeof e.pfx_image_buffer_new !== "function") {
+        throw new Error("This Rust WebAssembly binary has no image extraction API");
+      }
+      const buffer = e.pfx_image_buffer_new(byteCount);
+      if (!buffer) throw new Error("Unable to allocate image upload buffer");
+      try {
+        new Uint8Array(e.memory.buffer, buffer, byteCount).set(pixels);
+        const handle = e.pfx_image_new(
+          buffer, byteCount, width, height, count, stride, maxSamples,
+          alpha, ignoreWhite ? 1 : 0, regionX, regionY, regionWidth, regionHeight,
+        );
+        if (!handle) throw new Error("Image palette extraction failed or no eligible pixels");
+        try {
+          const sampledPixels = e.pfx_image_sampled(handle);
+          const eligiblePixels = e.pfx_image_eligible(handle);
+          const colors = Array.from({ length: e.pfx_image_len(handle) }, (_, index) => {
+            const color = outputWith(out =>
+              status(e.pfx_image_get(handle, index, out), "image palette color"));
+            const population = e.pfx_image_population(handle, index);
+            if (population < 0) status(population, "image palette population");
+            return {
+              index, color, population,
+              proportion: scalar(e.pfx_image_proportion(handle, index), "image palette proportion"),
+            };
+          });
+          return { colors, sampledPixels, eligiblePixels };
+        } finally {
+          e.pfx_image_free(handle);
+        }
+      } finally {
+        e.pfx_image_buffer_free(buffer, byteCount);
+      }
+    },
     convert(color, target) {
       return colorWith(color, (input) => outputWith((out) =>
         status(e.pfx_color_convert(input, code(ColorSpaces, target, "target space"), out), "conversion")));
