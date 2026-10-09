@@ -258,6 +258,20 @@ int32_t pfx_css_gradient_sample_progress(
 );
 void pfx_css_gradient_free(PfxCssGradient *gradient);
 
+/* Optional fast RGBA8 rasterization in a single Rust call. Width/height must
+ * match the dimensions used in pfx_css_gradient_new exactly. Row-major sRGB
+ * bytes with unassociated alpha; raster is independently owned and must be
+ * freed once. Caller must not retain pixel pointer after pfx_css_raster_free.
+ * Invalid dimensions, excessive pixel count or rendering errors return NULL.
+ */
+typedef struct PfxCssRaster PfxCssRaster;
+PfxCssRaster *pfx_css_gradient_raster_rgba8(
+    const PfxCssGradient *gradient, uint32_t width, uint32_t height
+);
+const uint8_t *pfx_css_raster_ptr(const PfxCssRaster *raster);
+uint32_t pfx_css_raster_len(const PfxCssRaster *raster);
+void pfx_css_raster_free(PfxCssRaster *raster);
+
 
 /* Deterministic Color Study with exactly 10 swatches and seedable RNG. */
 PfxStudy *pfx_study_new(
