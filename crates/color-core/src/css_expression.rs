@@ -326,15 +326,10 @@ fn percent_reference(kind: &str, space: ColorSpace, index: usize) -> f64 {
     match space {
         ColorSpace::Srgb if kind != "color" => 255.0,
         ColorSpace::Hsl | ColorSpace::Hwb => 100.0,
-        ColorSpace::Lab | ColorSpace::Lch => match index {
+        ColorSpace::Lab => if index == 0 { 100.0 } else { 125.0 },
+        ColorSpace::Lch => match index {
             0 => 100.0,
-            1 => {
-                if space == ColorSpace::Lch {
-                    150.0
-                } else {
-                    125.0
-                }
-            }
+            1 => 150.0,
             _ => 125.0,
         },
         ColorSpace::Oklab | ColorSpace::Oklch => {
