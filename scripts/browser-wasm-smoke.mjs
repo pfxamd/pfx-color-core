@@ -139,6 +139,103 @@ try {
           assert.equal(result.extractedCount, 2);
           assert.deepEqual(result.extractedDominant, [1, 0, 0]);
           assert.equal(result.extractedPopulation, 3);
+
+          // Render real CSS gradients to PNG, decode those pixels inside the
+          // same real browser, then compare them to independently sampled Rust
+          // WASM pixels. Test-only browser APIs; zero new core dependencies.
+          const fixtures = [
+            {
+              name: "rectangular linear",
+              css: "linear-gradient(45deg in srgb, #ff0000 0%, #0000ff 100%)",
+              kind: "linear", angle: 45,
+              stops: [0, 1], positions: [[40, 30], [120, 60], [200, 80]],
+            },
+            {
+              name: "ellipse farthest-corner",
+              css: "radial-gradient(ellipse farthest-corner at 70px 50px in srgb, #ff0000 0%, #0000ff 100%)",
+              kind: "radial", centerX: 70, centerY: 50,
+              radialShape: "ellipse", radialExtent: "farthest-corner",
+              stops: [0, 1], positions: [[70, 50], [120, 60], [180, 100]],
+            },
+            {
+              name: "explicit circle",
+              css: "radial-gradient(circle 65px at 95px 60px in srgb, #ff0000 0%, #0000ff 100%)",
+              kind: "radial", centerX: 95, centerY: 60,
+              radialShape: "circle", radialExtent: "explicit",
+              radiusX: 65, radiusY: 65,
+              stops: [0, 1], positions: [[110, 60], [140, 70], [170, 80]],
+            },
+            {
+              name: "conic offset",
+              css: "conic-gradient(from 30deg at 80px 45px in srgb, #ff0000 0%, #0000ff 100%)",
+              kind: "conic", angle: 30, centerX: 80, centerY: 45,
+              stops: [0, 1], positions: [[120, 45], [80, 80], [45, 30]],
+            },
+            {
+              name: "repeating linear",
+              css: "repeating-linear-gradient(90deg in srgb, #ff0000 20%, #0000ff 40%)",
+              kind: "linear", angle: 90, repeating: true,
+              stops: [0.2, 0.4], positions: [[36, 45], [64, 45], [113, 55], [172, 60]],
+            },
+          ];
+          for (const fixture of fixtures) {
+            const { supported } = await page.evaluate(css => {
+              const previous = document.querySelector("#pfx-css-pixel-fixture");
+              previous?.remove();
+              const div = document.createElement("div");
+              div.id = "pfx-css-pixel-fixture";
+              div.style.cssText = "box-sizing:content-box;width:240px;height:120px;"
+                + "margin:0;padding:0;border:0;background-color:white;";
+              div.style.backgroundImage = css;
+              document.body.append(div);
+              return { supported: getComputedStyle(div).backgroundImage !== "none" };
+            }, fixture.css);
+            assert.equal(supported, true, name + " does not support " + fixture.name);
+            const png = await page.locator("#pfx-css-pixel-fixture").screenshot();
+            const actual = await page.evaluate(async ({ png, positions }) => {
+              const image = new Image();
+              image.src = "data:image/png;base64," + png;
+              await image.decode();
+              const canvas = document.createElement("canvas");
+              canvas.width = image.width;
+              canvas.height = image.height;
+              const ctx = canvas.getContext("2d", { willReadFrequently: true });
+              ctx.drawImage(image, 0, 0);
+              const rgba = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+              return positions.map(([x, y]) => Array.from(
+                rgba.slice((y * canvas.width + x) * 4, (y * canvas.width + x) * 4 + 4)
+              ));
+            }, { png: png.toString("base64"), positions: fixture.positions });
+            const expected = await page.evaluate(async fixture => {
+              const { createPfxColorCore } = await import("/bindings/javascript/pfx-color-core.mjs");
+              const binary = await fetch("/target/wasm32-unknown-unknown/release/pfx_color_ffi.wasm");
+              const core = await createPfxColorCore(await binary.arrayBuffer());
+              const stops = fixture.stops.map((position, index) => ({
+                position, color: core.parseCss(index === 0 ? "#ff0000" : "#0000ff"),
+              }));
+              const handle = core.createCssGradient(stops, {
+                width: 240, height: 120, kind: fixture.kind,
+                angle: fixture.angle, centerX: fixture.centerX, centerY: fixture.centerY,
+                radialShape: fixture.radialShape, radialExtent: fixture.radialExtent,
+                radiusX: fixture.radiusX, radiusY: fixture.radiusY,
+                repeating: fixture.repeating, space: "srgb", target: "srgb", gamut: "clip",
+              });
+              try {
+                return fixture.positions.map(([x, y]) => {
+                  const color = handle.samplePixel(x + .5, y + .5);
+                  return color.channels.map(channel => Math.round(channel * 255));
+                });
+              } finally { handle.dispose(); }
+            }, fixture);
+            actual.forEach((pixel, index) => {
+              expected[index].forEach((value, channel) => {
+                assert.ok(Math.abs(value - pixel[channel]) <= 5,
+                  name + " " + fixture.name + " " + fixture.positions[index]
+                  + " channel " + channel + ": Rust " + value
+                  + " vs browser " + pixel[channel]);
+              });
+            });
+          }
           assert.deepEqual(errors, [], "Browser runtime errors: " + errors.join("; "));
           console.log(name, viewport.width + "x" + viewport.height, "PASS");
         } finally {
