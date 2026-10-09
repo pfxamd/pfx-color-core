@@ -1,0 +1,64 @@
+# PFx Colors migration compatibility gate
+
+Status: **experimental — production engine is unchanged**.
+
+This report is an interface-level audit of:
+- Rust science engine: crates/color-core/
+- Native/WASM bridge: crates/color-ffi/ and bindings/javascript/
+- Legacy TypeScript: src/engine/, src/tools/, src/workspace/
+- Deployed UI integration: pfxamd/pfx-colors/src/app/app.tsx
+- Production consumer pins a vendored TypeScript core at its own revision.
+
+The executable numerical gate is bindings/javascript/legacy-parity.smoke.mjs.
+It imports the actual ColorJsAdapter compiled from the repository AND the actual
+pfx_color_ffi.wasm; **no mock calculations**. This comparison fixture uses
+explicitly mapped color-space identifiers (\`p3\` versus \`display-p3\`) and
+numeric color inputs. Tests restrict semantic comparison to operations defined
+in both implementations. Passing the gate does **not** imply parity elsewhere.
+
+## Coverage matrix
+
+| Legacy feature | Rust status | Migration decision |
+| --- | --- | --- |
+| Numeric sRGB, linear sRGB, Display-P3, Rec.2020, XYZ, Lab, LCH, OKLab, OKLCH conversions | Present, executable parity gate | Candidate for opt-in numeric API only |
+| CIE76, CIEDE2000, OK difference | Present, executable parity gate | Candidate for opt-in numeric API only |
+| WCAG contrast of opaque in-gamut colors | Present, executable parity gate | Candidate for opt-in numeric API only |
+| Alpha-aware interpolation (shared numeric spaces) | Present, executable parity gate | Candidate for opt-in numeric API only |
+| RGB gamut membership | Present, executable parity gate | Candidate for opt-in numeric API only |
+| Tonal palettes, named harmonies and multi-stop gradients (shared cases) | Present, executable parity gate | Candidate for opt-in numeric API only |
+| CSS hex / rgb() / hsl() / lab() parsing | Missing | **Block migration of picker/workspace** |
+| CSS serialization, hex formatting/rounding | Missing | **Block all direct swaps** |
+| HSL / HSV / HWB / OKHSL / OKHSV, A98, ProPhoto, Lab-D65 | Missing | **Block picker and wide-format conversion swap** |
+| APCA contrast | Missing | Keep TypeScript |
+| DeltaE ITP / Jz / HCT | Missing | Keep TypeScript |
+| CSS Local-MINDE gamut mapping | Missing: Rust provides explicit clip/Oklch chroma | Keep TypeScript gamut output; difference is NOT numeric parity |
+| CSS missing/none channel semantics, hue raw path | Missing | Keep TypeScript |
+| Full CSS-compatible gradient serialization/geometry | Missing: Rust normalized unit square | Keep TypeScript |
+| Arbitrary anchor palettes/custom harmony in WASM ABI | Rust core only; binding missing | Keep TypeScript |
+| Randomized 10-color Color Study (custom algorithm + PRNG) | Not implemented in Rust | Keep TypeScript |
+| Color-picker selection, channel editing and normalized hex | Not implemented end-to-end | Keep TypeScript |
+| Workspace mutations and undo/redo | Not ported | Keep TypeScript |
+| Optional image extraction | Not ported to Rust | Keep existing image adapter |
+
+## Transition principles
+
+1. Never switch PFx Colors' default engine based on a small numeric parity gate.
+2. Keep the published UI and its vendored TypeScript dependency untouched.
+3. Run the native Rust, C smoke, WASM smoke, TypeScript and parity CI gates.
+4. Once numeric parity passes, future work can introduce a **separate opt-in
+   adapter**, with explicit input compatibility and fallback only in the legacy
+   layer. The Rust core remains completely free of third-party crates.
+5. Migrate parsing, formatting, CSS gamut mapping, missing channels, workspace
+   and Color Study with independent tests before removing the TypeScript path.
+6. Browser-level UI parity and real device regression tests must precede any
+   production default switch.
+
+## Test tolerances
+
+W3C chromaticity and white-point constants differ slightly across libraries.
+Parity tests compare floating-point coordinates with **declared** tolerances
+rather than requiring byte-exact equality. For LCH/OKLCH hues, comparisons use
+circular angular distance; null / powerless hue is tracked separately.
+
+These are smoke/regression gates, not a substitute for official numerical
+reference datasets, browser testing or a full format parser conformance suite.
