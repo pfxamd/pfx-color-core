@@ -10,7 +10,6 @@
 //! misrepresenting them. This is not a complete CSS parser.
 //! Reference: https://www.w3.org/TR/css-color-4/
 
-use crate::cylindrical::{hsl_to_srgb, hwb_to_srgb};
 use crate::gamut::{map_to_gamut, GamutMap};
 use crate::spaces::{Color, ColorError, ColorSpace};
 

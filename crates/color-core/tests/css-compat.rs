@@ -145,7 +145,7 @@ fn common_names_transparent_and_css_round_trip() {
         "color(srgb-linear 0.2 0.4 0.7)",
     ] {
         let a = parse_css(source).unwrap();
-        let serialized = format_css(a);
+        let serialized = format_css(a).unwrap();
         let b = parse_css(&serialized).unwrap();
         assert_eq!(a.space(), b.space(), "space from {source}");
         for i in 0..3 {
