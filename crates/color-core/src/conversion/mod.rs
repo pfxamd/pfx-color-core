@@ -352,11 +352,9 @@ fn from_xyz_d65(target: ColorSpace, xyz: [f64; 3]) -> [f64; 3] {
         ColorSpace::XyzD50 => D65_TO_D50.transform(xyz),
         ColorSpace::Lab => xyz_d50_to_lab(D65_TO_D50.transform(xyz)),
         ColorSpace::Lch => to_polar(xyz_d50_to_lab(D65_TO_D50.transform(xyz))),
-        ColorSpace::LabD65 => xyz_d50_to_lab([
-            xyz[0] * D50[0] / D65[0],
-            xyz[1],
-            xyz[2] * D50[2] / D65[2],
-        ]),
+        ColorSpace::LabD65 => {
+            xyz_d50_to_lab([xyz[0] * D50[0] / D65[0], xyz[1], xyz[2] * D50[2] / D65[2]])
+        }
         ColorSpace::Oklab => xyz_d65_to_oklab(xyz),
         ColorSpace::Oklch => to_polar(xyz_d65_to_oklab(xyz)),
         ColorSpace::Hsl => srgb_to_hsl(map3(XYZ_TO_SRGB.transform(xyz), encode_srgb)),
