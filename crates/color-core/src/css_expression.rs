@@ -114,10 +114,18 @@ impl<'a> MathParser<'a> {
     }
     fn unary(&mut self) -> Result<Quantity, ColorError> {
         if self.consume(b'+') {
-            return self.unary();
+            self.depth += 1;
+            if self.depth > MAX_DEPTH { return Err(ColorError::UnsupportedSyntax); }
+            let result = self.unary();
+            self.depth -= 1;
+            return result;
         }
         if self.consume(b'-') {
-            let result = self.unary()?;
+            self.depth += 1;
+            if self.depth > MAX_DEPTH { return Err(ColorError::UnsupportedSyntax); }
+            let result = self.unary();
+            self.depth -= 1;
+            let result = result?;
             return Quantity::new(-result.value, result.unit);
         }
         self.atom()
@@ -362,7 +370,8 @@ fn parse_inner(input: &str, depth: usize) -> Result<CssColor, ColorError> {
     let origin = if relative {
         let source = fields.get(index).ok_or(ColorError::InvalidSyntax)?;
         index += 1;
-        let inner = if source.contains('(') {
+        let is_relative = source.split_once('(').is_some_and(|(_, body)| body.trim_start().starts_with("from "));
+        let inner = if source.contains("calc(") || is_relative {
             parse_inner(source, depth + 1)?
         } else {
             parse_css_missing(source)?
@@ -384,7 +393,7 @@ fn parse_inner(input: &str, depth: usize) -> Result<CssColor, ColorError> {
     }
     let original = origin.map(|value| value.convert_numeric(space)).transpose()?;
     let refs = original.map(|color| variables(space, kind, color));
-    let env = refs.as_deref().unwrap_or(&[]);
+    let env = refs.as_ref().map(|items| items.as_slice()).unwrap_or(&[]);
     let mut channels = [0.0_f64; 3];
     let mut missing = 0u8;
     for i in 0..3 {
