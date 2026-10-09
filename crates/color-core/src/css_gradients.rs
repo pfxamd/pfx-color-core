@@ -265,7 +265,11 @@ impl CssGradient {
         let mut weighted_rgb = [0.0; 3];
         let mut weighted_alpha = 0.0;
         for (index, stop) in self.stops.iter().enumerate() {
-            let weight = if index == 0 || index + 1 == n { unit } else { unit * 2.0 };
+            let weight = if index == 0 || index + 1 == n {
+                unit
+            } else {
+                unit * 2.0
+            };
             let color = stop.color.to(ColorSpace::Srgb)?;
             let alpha = color.alpha() * weight;
             weighted_alpha += alpha;
@@ -279,12 +283,17 @@ impl CssGradient {
             }
         }
         let average = Color::new(
-            ColorSpace::Srgb, weighted_rgb, weighted_alpha.clamp(0.0, 1.0),
+            ColorSpace::Srgb,
+            weighted_rgb,
+            weighted_alpha.clamp(0.0, 1.0),
         )?;
-        let (color, mapped) = mapped_output(
-            average, self.options.target_space, self.options.gamut_map,
-        )?;
-        Ok(GradientSample { position, color, mapped })
+        let (color, mapped) =
+            mapped_output(average, self.options.target_space, self.options.gamut_map)?;
+        Ok(GradientSample {
+            position,
+            color,
+            mapped,
+        })
     }
 
     /// The logical, unbounded line coordinate; outside end stops extends solid
