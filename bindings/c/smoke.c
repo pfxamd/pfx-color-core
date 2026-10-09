@@ -1,6 +1,7 @@
 /* Zero-dependency native C integration smoke test for PFx Color Core. */
 #include "pfx_color_core.h"
 #include <math.h>
+#include <stdlib.h>
 #include <stdio.h>
 
 #define CHECK(condition) \
@@ -199,6 +200,19 @@ int main(void) {
     CHECK(fabs(out.channels[0] - 0.5) < 1e-12);
     CHECK(pfx_css_gradient_add_stop(css_pixels, NAN, &black) < 0);
     CHECK(pfx_css_gradient_sample_pixel(css_pixels, NAN, 50, &out) < 0);
+    PfxCssRaster *image = pfx_css_gradient_raster_rgba8(css_pixels, 240, 120);
+    CHECK(image != NULL);
+    CHECK(pfx_css_raster_len(image) == 240 * 120 * 4);
+    const uint8_t *bytes = pfx_css_raster_ptr(image);
+    CHECK(bytes != NULL);
+    CHECK(pfx_css_gradient_sample_pixel(css_pixels, 0.5, 0.5, &out) == 0);
+    CHECK(abs((int)bytes[0] - (int)round(out.channels[0] * 255)) <= 1);
+    CHECK(bytes[3] == 255);
+    CHECK(pfx_css_gradient_raster_rgba8(css_pixels, 240, 119) == NULL);
+    pfx_css_raster_free(image);
+    pfx_css_raster_free(NULL);
+    CHECK(pfx_css_raster_ptr(NULL) == NULL);
+    CHECK(pfx_css_raster_len(NULL) == 0);
     pfx_css_gradient_free(css_pixels);
     CHECK(pfx_css_gradient_new(
         PFX_GRADIENT_RADIAL, 0.0, 100.0, 0.0, 50.0, 50.0,
