@@ -38,6 +38,11 @@ fn channels_in_gamut(channels: [f64; 3]) -> bool {
 /// Whether the converted color is inside the RGB unit cube of the target.
 /// Unbounded spaces (XYZ, Lab, LCH, Oklab, Oklch) return true.
 pub fn is_in_gamut(input: Color, target: ColorSpace) -> Result<bool, ColorError> {
+    // CSS HSL/HWB are projections of sRGB, not independent unlimited gamuts.
+    // HSV is a UI cylindrical projection of sRGB with identical bounds.
+    if matches!(target, ColorSpace::Hsl | ColorSpace::Hwb | ColorSpace::Hsv) {
+        return is_in_gamut(input, ColorSpace::Srgb);
+    }
     if !bounded_rgb(target) {
         return Ok(true);
     }
@@ -51,6 +56,9 @@ pub fn map_to_gamut(
     target: ColorSpace,
     method: GamutMap,
 ) -> Result<Color, ColorError> {
+    if matches!(target, ColorSpace::Hsl | ColorSpace::Hwb | ColorSpace::Hsv) {
+        return map_to_gamut(input, ColorSpace::Srgb, method)?.to(target);
+    }
     let converted = input.to(target)?;
     if !bounded_rgb(target) || channels_in_gamut(converted.channels()) {
         return Ok(converted);
