@@ -64,7 +64,8 @@ function compare(actual, expected, space, label) {
       );
       continue;
     }
-    const hue = i === 2 && (space === "lch" || space === "oklch");
+    const hue = (i === 2 && (space === "lch" || space === "oklch")) ||
+      (i === 0 && (space === "hsl" || space === "hsv" || space === "hwb"));
     const difference = hue ?
       Math.abs((((a - b) + 540) % 360) - 180) :
       Math.abs(a - b);
@@ -231,7 +232,7 @@ test("multi-stop gradient samples agree in shared, in-gamut rectangular space", 
 
 test("CSS absolute colors parsed by Rust agree with the legacy adapter", () => {
   const inputs = [
-    "#336699", "#ff7a0066", "#f06", "transparent",
+    "#336699", "#ff7a0066", "#f06", "transparent", "aliceblue", "goldenrod", "rebeccapurple",
     "rgb(255 0 0 / 50%)", "rgba(20, 70, 140, 0.4)",
     "hsl(140 55% 45%)", "hsla(20, 65%, 37%, .8)",
     "hwb(250 15% 20% / .9)",
