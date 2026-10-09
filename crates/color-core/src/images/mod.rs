@@ -263,14 +263,14 @@ pub fn extract_image_palette(
         for point in &points {
             let cluster = nearest(point.oklab, &centers);
             weights[cluster] += point.count;
-            for i in 0..3 {
-                sums[cluster][i] += point.oklab[i] * point.count as f64;
+            for (i, component) in sums[cluster].iter_mut().enumerate() {
+                *component += point.oklab[i] * point.count as f64;
             }
         }
         for (index, weight) in weights.into_iter().enumerate() {
             if weight != 0 {
-                for i in 0..3 {
-                    centers[index][i] = sums[index][i] / weight as f64;
+                for (i, component) in centers[index].iter_mut().enumerate() {
+                    *component = sums[index][i] / weight as f64;
                 }
             }
         }
@@ -281,8 +281,8 @@ pub fn extract_image_palette(
     for point in &points {
         let cluster = nearest(point.oklab, &centers);
         populations[cluster] += point.count;
-        for i in 0..3 {
-            rgb_sums[cluster][i] += point.rgb[i] * point.count as f64;
+        for (i, component) in rgb_sums[cluster].iter_mut().enumerate() {
+            *component += point.rgb[i] * point.count as f64;
         }
     }
     let mut colors = Vec::new();
@@ -297,7 +297,7 @@ pub fn extract_image_palette(
             proportion: population as f64 / eligible_pixels as f64,
         });
     }
-    colors.sort_by(|a, b| b.population.cmp(&a.population));
+    colors.sort_by_key(|item| std::cmp::Reverse(item.population));
     Ok(ImagePalette {
         colors,
         sampled_pixels,
