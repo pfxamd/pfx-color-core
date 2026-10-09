@@ -231,6 +231,133 @@ pub unsafe extern "C" fn pfx_css_gradient_raster_rgba8(
     result.unwrap_or(std::ptr::null_mut())
 }
 
+/// Approximate preview acceleration with a per-color-segment LUT. Hard
+/// boundaries remain exact because the matching stop interval is chosen
+/// before interpolating the LUT. This is intentionally separate from
+/// pfx_css_gradient_raster_rgba8, which retains exact scalar semantics.
+struct PreviewLut {
+    stops: Vec<f64>,
+    segments: Vec<Vec<[u8; 4]>>,
+    first: [u8; 4],
+    last: [u8; 4],
+    constant: Option<[u8; 4]>,
+    repeating: bool,
+}
+
+fn rgba(color: Color) -> Result<[u8; 4], i32> {
+    let srgb = if color.space() == ColorSpace::Srgb {
+        color
+    } else {
+        color.to(ColorSpace::Srgb).map_err(|_| COLOR)?
+    };
+    let rgb = srgb.channels();
+    Ok([byte(rgb[0]), byte(rgb[1]), byte(rgb[2]), byte(srgb.alpha())])
+}
+
+impl PreviewLut {
+    fn new(gradient: &CssGradient) -> Result<Self, i32> {
+        let stops = gradient.stops();
+        let positions: Vec<f64> = stops.iter().map(|s| s.position).collect();
+        let first = rgba(gradient.sample_progress(stops[0].position - 1.0).map_err(|_| COLOR)?.color)?;
+        let last = rgba(gradient.sample_progress(stops[stops.len()-1].position).map_err(|_| COLOR)?.color)?;
+        let repeating = gradient.options().repeating;
+        let constant = if repeating && positions[0] == positions[positions.len() - 1] {
+            Some(rgba(gradient.sample_progress(positions[0]).map_err(|_| COLOR)?.color)?)
+        } else {
+            None
+        };
+        let bins = (8192 / (stops.len() - 1)).clamp(32, 1024);
+        let mut segments = Vec::with_capacity(stops.len() - 1);
+        for i in 0..stops.len() - 1 {
+            let a = stops[i].position;
+            let b = stops[i + 1].position;
+            if b <= a {
+                segments.push(Vec::new());
+                continue;
+            }
+            let mut samples = Vec::with_capacity(bins + 1);
+            for j in 0..=bins {
+                // Never cross the right side of a hard stop at the final
+                // sample: its left limit is the first color at that stop.
+                let sampled = if j == bins {
+                    rgba(gradient.sample_progress(b - (b - a) * 1e-12).map_err(|_| COLOR)?.color)?
+                } else {
+                    let fraction = j as f64 / bins as f64;
+                    rgba(gradient.sample_progress(a + (b - a) * fraction).map_err(|_| COLOR)?.color)?
+                };
+                samples.push(sampled);
+            }
+            segments.push(samples);
+        }
+        Ok(Self { stops: positions, segments, first, last, constant, repeating })
+    }
+
+    fn sample(&self, mut progress: f64) -> Result<[u8; 4], i32> {
+        if !progress.is_finite() { return Err(COLOR); }
+        if let Some(value) = self.constant { return Ok(value); }
+        let first = self.stops[0];
+        let last = self.stops[self.stops.len() - 1];
+        if self.repeating {
+            progress = (progress - first).rem_euclid(last - first) + first;
+            if !progress.is_finite() { return Err(COLOR); }
+        }
+        if progress < first { return Ok(self.first); }
+        if progress >= last { return Ok(self.last); }
+        let right = self.stops.partition_point(|stop| *stop <= progress);
+        let index = right - 1;
+        let ramp = &self.segments[index];
+        if ramp.is_empty() { return Ok(self.last); }
+        let t = ((progress - self.stops[index])
+            / (self.stops[right] - self.stops[index]))
+            * (ramp.len() - 1) as f64;
+        let low = (t.floor() as usize).min(ramp.len() - 1);
+        let high = (low + 1).min(ramp.len() - 1);
+        let mix = (t - low as f64).clamp(0.0, 1.0);
+        let mut pixel = [0; 4];
+        for channel in 0..4 {
+            pixel[channel] = ((ramp[low][channel] as f64 * (1.0 - mix))
+                + (ramp[high][channel] as f64 * mix)).round() as u8;
+        }
+        Ok(pixel)
+    }
+}
+
+/// Fast *preview* raster, quantized in each stop segment. Maximum 8192 LUT
+/// samples, plus per-pixel geometry. Can differ by a few 8-bit units from the
+/// exact scalar renderer; use pfx_css_gradient_raster_rgba8 for exact output.
+///
+/// # Safety
+/// gradient must be a live aligned handle from pfx_css_gradient_new.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_css_gradient_raster_preview_rgba8(
+    gradient: *const PfxCssGradient,
+    width: u32,
+    height: u32,
+) -> *mut PfxCssRaster {
+    let result = (|| {
+        let handle = gradient.as_ref().ok_or(NULL)?;
+        let count = (width as usize).checked_mul(height as usize).ok_or(COLOR)?;
+        if count == 0 || count > MAX_RASTER_PIXELS
+            || handle.options.width != width as f64
+            || handle.options.height != height as f64
+        {
+            return Err(COLOR);
+        }
+        let gradient = evaluated(handle)?;
+        let lookup = PreviewLut::new(&gradient)?;
+        let mut pixels = Vec::with_capacity(count * 4);
+        for y in 0..height {
+            for x in 0..width {
+                let position = gradient.progress_at(x as f64 + 0.5, y as f64 + 0.5)
+                    .map_err(|_| COLOR)?;
+                pixels.extend_from_slice(&lookup.sample(position)?);
+            }
+        }
+        Ok(Box::into_raw(Box::new(PfxCssRaster { pixels })))
+    })();
+    result.unwrap_or(std::ptr::null_mut())
+}
+
 /// # Safety
 /// raster must be a readable, aligned, live handle allocated by
 /// pfx_css_gradient_raster_rgba8, not previously freed.
