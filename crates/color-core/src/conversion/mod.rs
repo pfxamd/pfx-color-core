@@ -85,28 +85,67 @@ const XYZ_TO_REC2020: Matrix3 = Matrix3([
     ],
 ]);
 
-
 const A98_TO_XYZ: Matrix3 = Matrix3([
-    [573536.0 / 994567.0, 263643.0 / 1420810.0, 187206.0 / 994567.0],
-    [591459.0 / 1989134.0, 6239551.0 / 9945670.0, 374412.0 / 4972835.0],
-    [53769.0 / 1989134.0, 351524.0 / 4972835.0, 4929758.0 / 4972835.0],
+    [
+        573536.0 / 994567.0,
+        263643.0 / 1420810.0,
+        187206.0 / 994567.0,
+    ],
+    [
+        591459.0 / 1989134.0,
+        6239551.0 / 9945670.0,
+        374412.0 / 4972835.0,
+    ],
+    [
+        53769.0 / 1989134.0,
+        351524.0 / 4972835.0,
+        4929758.0 / 4972835.0,
+    ],
 ]);
 const XYZ_TO_A98: Matrix3 = Matrix3([
-    [1829569.0 / 896150.0, -506331.0 / 896150.0, -308931.0 / 896150.0],
-    [-851781.0 / 878810.0, 1648619.0 / 878810.0, 36519.0 / 878810.0],
-    [16779.0 / 1248040.0, -147721.0 / 1248040.0, 1266979.0 / 1248040.0],
+    [
+        1829569.0 / 896150.0,
+        -506331.0 / 896150.0,
+        -308931.0 / 896150.0,
+    ],
+    [
+        -851781.0 / 878810.0,
+        1648619.0 / 878810.0,
+        36519.0 / 878810.0,
+    ],
+    [
+        16779.0 / 1248040.0,
+        -147721.0 / 1248040.0,
+        1266979.0 / 1248040.0,
+    ],
 ]);
 // The published W3C ProPhoto RGB matrices are relative to D50.
 #[allow(clippy::excessive_precision)]
 const PROPHOTO_TO_XYZ_D50: Matrix3 = Matrix3([
-    [0.79776664490064230, 0.13518129740053308, 0.03134773412839220],
-    [0.28807482881940130, 0.71183523424187300, 0.00008993693872564],
+    [
+        0.79776664490064230,
+        0.13518129740053308,
+        0.03134773412839220,
+    ],
+    [
+        0.28807482881940130,
+        0.71183523424187300,
+        0.00008993693872564,
+    ],
     [0.0, 0.0, 0.82510460251046020],
 ]);
 #[allow(clippy::excessive_precision)]
 const XYZ_D50_TO_PROPHOTO: Matrix3 = Matrix3([
-    [1.34578688164715830, -0.25557208737979464, -0.05110186497554526],
-    [-0.54463070512490190, 1.50824774284514680, 0.02052744743642139],
+    [
+        1.34578688164715830,
+        -0.25557208737979464,
+        -0.05110186497554526,
+    ],
+    [
+        -0.54463070512490190,
+        1.50824774284514680,
+        0.02052744743642139,
+    ],
     [0.0, 0.0, 1.21196754563894520],
 ]);
 fn decode_a98(value: f64) -> f64 {
@@ -291,7 +330,9 @@ fn to_xyz_d65(space: ColorSpace, c: [f64; 3]) -> [f64; 3] {
         ColorSpace::Hwb => SRGB_TO_XYZ.transform(map3(hwb_to_srgb(c), decode_srgb)),
         ColorSpace::Hsv => SRGB_TO_XYZ.transform(map3(hsv_to_srgb(c), decode_srgb)),
         ColorSpace::A98Rgb => A98_TO_XYZ.transform(map3(c, decode_a98)),
-        ColorSpace::ProPhotoRgb => D50_TO_D65.transform(PROPHOTO_TO_XYZ_D50.transform(map3(c, decode_prophoto))),
+        ColorSpace::ProPhotoRgb => {
+            D50_TO_D65.transform(PROPHOTO_TO_XYZ_D50.transform(map3(c, decode_prophoto)))
+        }
     }
 }
 
@@ -313,7 +354,10 @@ fn from_xyz_d65(target: ColorSpace, xyz: [f64; 3]) -> [f64; 3] {
         ColorSpace::Hwb => srgb_to_hwb(map3(XYZ_TO_SRGB.transform(xyz), encode_srgb)),
         ColorSpace::Hsv => srgb_to_hsv(map3(XYZ_TO_SRGB.transform(xyz), encode_srgb)),
         ColorSpace::A98Rgb => map3(XYZ_TO_A98.transform(xyz), encode_a98),
-        ColorSpace::ProPhotoRgb => map3(XYZ_D50_TO_PROPHOTO.transform(D65_TO_D50.transform(xyz)), encode_prophoto),
+        ColorSpace::ProPhotoRgb => map3(
+            XYZ_D50_TO_PROPHOTO.transform(D65_TO_D50.transform(xyz)),
+            encode_prophoto,
+        ),
     }
 }
 
