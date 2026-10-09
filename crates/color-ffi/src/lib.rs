@@ -10,6 +10,7 @@
 //! C/WASM/JS callers must use ABI revision pfx_abi_version() == 1.
 
 use pfx_color_core::{
+    ColorStudy, ColorStudyOptions, generate_color_study,
     contrast_ratio, difference, format_css, format_hex, generate_harmony, interpolate, is_in_gamut,
     map_to_gamut, parse_css, ramp_palette, relative_luminance, tonal_palette, Color, ColorSpace,
     DifferenceMethod, GamutMap, Gradient, GradientKind, GradientOptions, GradientStop,
@@ -752,6 +753,112 @@ pub unsafe extern "C" fn pfx_css_format(
     std::ptr::copy_nonoverlapping(output.as_ptr(), buffer, output.len());
     *buffer.add(output.len()) = 0;
     output.len() as i32
+}
+
+
+/// Heap-owned deterministic 10-color study.
+pub struct PfxStudy {
+    study: ColorStudy,
+}
+
+/// Return null on invalid arguments. Controls use a 0..100 range.
+/// # Safety
+/// seed must point to a live, initialized PfxColor value.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_study_new(
+    seed: *const PfxColor,
+    rnd_seed: u32,
+    lightness: f64,
+    chroma: f64,
+    hue_range: f64,
+    tone_range: f64,
+    target: u32,
+    mapping: u32,
+) -> *mut PfxStudy {
+    let result = (|| {
+        generate_color_study(
+            read(seed)?,
+            ColorStudyOptions {
+                lightness,
+                chroma,
+                hue_range,
+                tone_range,
+                random_seed: rnd_seed,
+                target_space: space(target)?,
+                gamut_map: gamut_method(mapping)?,
+            },
+        )
+        .map_err(|_| COLOR)
+    })();
+    result.map(|study| Box::into_raw(Box::new(PfxStudy { study })))
+        .unwrap_or(std::ptr::null_mut())
+}
+
+/// # Safety
+/// ptr must be null or a live study handle.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_study_len(ptr: *const PfxStudy) -> u32 {
+    ptr.as_ref().map_or(0, |v| v.study.colors.len() as u32)
+}
+
+/// Return scheme code 0..5, or u32::MAX on error.
+/// # Safety
+/// ptr must be null or a live study handle.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_study_scheme(ptr: *const PfxStudy) -> u32 {
+    ptr.as_ref().map_or(u32::MAX, |v| match v.study.scheme {
+        HarmonyScheme::Analogous => 0,
+        HarmonyScheme::Complementary => 1,
+        HarmonyScheme::SplitComplementary => 2,
+        HarmonyScheme::Triadic => 3,
+        HarmonyScheme::Tetradic => 4,
+        HarmonyScheme::Square => 5,
+        HarmonyScheme::Custom => u32::MAX,
+    })
+}
+
+/// Returns 0 success, negative for invalid pointers/index.
+/// # Safety
+/// study must be a live handle and out a writable PfxColor.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_study_get(
+    study: *const PfxStudy, index: u32, out: *mut PfxColor
+) -> i32 {
+    let result = (|| {
+        Ok(study.as_ref().ok_or(NULL)?.study.colors
+            .get(index as usize).ok_or(INDEX)?.color)
+    })();
+    finish_color(result, out)
+}
+
+/// Returns 1 if mapped, 0 otherwise or negative error for missing item.
+/// # Safety
+/// study must be null or a live handle.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_study_mapped(study: *const PfxStudy, index: u32) -> i32 {
+    study.as_ref().and_then(|s| s.study.colors.get(index as usize))
+        .map_or(INDEX, |color| i32::from(color.mapped))
+}
+
+/// Already computed Oklch coordinate 0=L, 1=C, 2=h; NaN on error.
+/// # Safety
+/// study must be null or a live handle.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_study_oklch(
+    study: *const PfxStudy, index: u32, coordinate: u32
+) -> f64 {
+    study.as_ref().and_then(|s| s.study.colors.get(index as usize))
+        .and_then(|c| c.oklch.get(coordinate as usize)).copied()
+        .unwrap_or(f64::NAN)
+}
+
+/// # Safety
+/// ptr must be null or an owned handle from pfx_study_new, not yet freed.
+#[no_mangle]
+pub unsafe extern "C" fn pfx_study_free(ptr: *mut PfxStudy) {
+    if !ptr.is_null() {
+        drop(Box::from_raw(ptr));
+    }
 }
 
 #[cfg(test)]
