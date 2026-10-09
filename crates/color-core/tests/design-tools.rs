@@ -1,7 +1,7 @@
 use pfx_color_core::{
     anchored_palette, generate_custom_harmony, generate_harmony, ramp_palette, tonal_palette,
     Color, ColorError, ColorSpace, GamutMap, Gradient, GradientKind, GradientOptions, GradientStop,
-    HarmonyOptions, HarmonyScheme, HueMethod, RampOptions, TonalOptions,
+    HarmonyOptions, HarmonyScheme, RampOptions, TonalOptions,
 };
 
 fn c(space: ColorSpace, channels: [f64; 3]) -> Color {
