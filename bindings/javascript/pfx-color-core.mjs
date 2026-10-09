@@ -534,6 +534,32 @@ export async function createPfxColorCore(wasm) {
             e.pfx_css_gradient_sample_progress(handle, finite(position, "position"), out),
             "CSS gradient progress sample"));
         },
+        /**
+         * Entire pixel buffer is computed within one Rust call. Copies bytes
+         * out of WASM memory before freeing Rust-owned image allocation.
+         */
+        rasterRGBA8(widthPixels, heightPixels) {
+          active();
+          if (!Number.isInteger(widthPixels) || !Number.isInteger(heightPixels)
+            || widthPixels <= 0 || heightPixels <= 0
+            || widthPixels * heightPixels > 1048576) {
+            throw new RangeError("CSS raster pixel dimensions are invalid");
+          }
+          const image = e.pfx_css_gradient_raster_rgba8(handle, widthPixels, heightPixels);
+          if (!image) throw new Error("Rust CSS raster could not be generated");
+          try {
+            const bytes = e.pfx_css_raster_len(image);
+            const pointer = e.pfx_css_raster_ptr(image);
+            if (!pointer || bytes !== widthPixels * heightPixels * 4) {
+              throw new Error("Invalid Rust CSS raster buffer");
+            }
+            return new Uint8ClampedArray(
+              new Uint8Array(e.memory.buffer, pointer, bytes)
+            );
+          } finally {
+            e.pfx_css_raster_free(image);
+          }
+        },
         dispose() {
           if (!disposed) {
             disposed = true;
