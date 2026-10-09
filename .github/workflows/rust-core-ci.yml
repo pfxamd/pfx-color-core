@@ -45,3 +45,26 @@ jobs:
         run: npm run build
       - name: Compare Rust WebAssembly against real TypeScript engine
         run: node --test bindings/javascript/legacy-parity.smoke.mjs
+      - name: Bundle tested standalone WebAssembly engine
+        uses: actions/upload-artifact@v4
+        with:
+          name: pfx-color-core-wasm-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            target/wasm32-unknown-unknown/release/pfx_color_ffi.wasm
+            bindings/javascript/pfx-color-core.mjs
+            LICENSE
+            docs/portable-bindings.md
+      - name: Bundle tested native Linux engine
+        uses: actions/upload-artifact@v4
+        with:
+          name: pfx-color-core-linux-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            target/release/libpfx_color_ffi.so
+            target/release/libpfx_color_ffi.a
+            bindings/c/pfx_color_core.h
+            LICENSE
+            docs/portable-bindings.md
