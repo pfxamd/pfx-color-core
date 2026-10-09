@@ -10,7 +10,7 @@
 use crate::cylindrical::{
     hsl_to_srgb, hsv_to_srgb, hwb_to_srgb, srgb_to_hsl, srgb_to_hsv, srgb_to_hwb,
 };
-use crate::math::{decode_rec2020, decode_srgb, encode_rec2020, encode_srgb, Matrix3, D50};
+use crate::math::{decode_rec2020, decode_srgb, encode_rec2020, encode_srgb, Matrix3, D50, D65};
 use crate::spaces::{Color, ColorError, ColorSpace};
 
 const SRGB_TO_XYZ: Matrix3 = Matrix3([
@@ -324,6 +324,10 @@ fn to_xyz_d65(space: ColorSpace, c: [f64; 3]) -> [f64; 3] {
         ColorSpace::XyzD50 => D50_TO_D65.transform(c),
         ColorSpace::Lab => D50_TO_D65.transform(lab_to_xyz_d50(c)),
         ColorSpace::Lch => D50_TO_D65.transform(lab_to_xyz_d50(from_polar(c))),
+        ColorSpace::LabD65 => {
+            let xyz = lab_to_xyz_d50(c);
+            [xyz[0] * D65[0] / D50[0], xyz[1], xyz[2] * D65[2] / D50[2]]
+        }
         ColorSpace::Oklab => oklab_to_xyz_d65(c),
         ColorSpace::Oklch => oklab_to_xyz_d65(from_polar(c)),
         ColorSpace::Hsl => SRGB_TO_XYZ.transform(map3(hsl_to_srgb(c), decode_srgb)),
@@ -348,6 +352,11 @@ fn from_xyz_d65(target: ColorSpace, xyz: [f64; 3]) -> [f64; 3] {
         ColorSpace::XyzD50 => D65_TO_D50.transform(xyz),
         ColorSpace::Lab => xyz_d50_to_lab(D65_TO_D50.transform(xyz)),
         ColorSpace::Lch => to_polar(xyz_d50_to_lab(D65_TO_D50.transform(xyz))),
+        ColorSpace::LabD65 => xyz_d50_to_lab([
+            xyz[0] * D50[0] / D65[0],
+            xyz[1],
+            xyz[2] * D50[2] / D65[2],
+        ]),
         ColorSpace::Oklab => xyz_d65_to_oklab(xyz),
         ColorSpace::Oklch => to_polar(xyz_d65_to_oklab(xyz)),
         ColorSpace::Hsl => srgb_to_hsl(map3(XYZ_TO_SRGB.transform(xyz), encode_srgb)),
