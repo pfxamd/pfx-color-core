@@ -12,7 +12,7 @@ export const ColorSpaces = Object.freeze({
 });
 const SpaceNames = Object.freeze(Object.keys(ColorSpaces));
 const DifferenceMethods = Object.freeze({ cie76: 0, ciede2000: 1, ok: 2 });
-const HueMethods = Object.freeze({ shorter: 0, longer: 1, increasing: 2, decreasing: 3 });
+const HueMethods = Object.freeze({ shorter: 0, longer: 1, increasing: 2, decreasing: 3, raw: 4 });
 const GamutMethods = Object.freeze({ clip: 0, oklchChroma: 1, css: 2 });
 const HarmonySchemes = Object.freeze({
   analogous: 0, complementary: 1, splitComplementary: 2,
