@@ -5,8 +5,8 @@
 //! and is *not* the Local-MINDE algorithm defined by CSS Color 4.
 //! https://www.w3.org/TR/css-color-4/#gamut-mapping
 
-use crate::spaces::{Color, ColorError, ColorSpace};
 use crate::difference::{difference, DifferenceMethod};
+use crate::spaces::{Color, ColorError, ColorSpace};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GamutMap {
@@ -104,7 +104,6 @@ pub fn map_to_gamut(
     }
 }
 
-
 /// CSS Color 4 §14.2.2: binary-search chroma reduction with local MINDE.
 /// Unlike a strict chroma-only mapping, nearby out-of-gamut colors may be
 /// clipped if deltaEOK between the unclipped and clipped result is <0.02.
@@ -123,7 +122,10 @@ fn css_local_minde(input: Color, target: ColorSpace) -> Result<Color, ColorError
     let clip = |color: Color| -> Result<Color, ColorError> {
         Color::new(
             target,
-            color.to(target)?.channels().map(|value| value.clamp(0.0, 1.0)),
+            color
+                .to(target)?
+                .channels()
+                .map(|value| value.clamp(0.0, 1.0)),
             alpha,
         )
     };

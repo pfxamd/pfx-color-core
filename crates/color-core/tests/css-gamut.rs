@@ -1,6 +1,5 @@
 use pfx_color_core::{
-    difference, is_in_gamut, map_to_gamut, Color, ColorSpace,
-    DifferenceMethod, GamutMap,
+    difference, is_in_gamut, map_to_gamut, Color, ColorSpace, DifferenceMethod, GamutMap,
 };
 
 fn c(space: ColorSpace, channels: [f64; 3]) -> Color {
@@ -10,7 +9,10 @@ fn c(space: ColorSpace, channels: [f64; 3]) -> Color {
 #[test]
 fn css_mapping_preserves_in_gamut_colors_identically() {
     let input = c(ColorSpace::Srgb, [0.3, 0.4, 0.5]);
-    assert_eq!(map_to_gamut(input, ColorSpace::Srgb, GamutMap::Css).unwrap(), input);
+    assert_eq!(
+        map_to_gamut(input, ColorSpace::Srgb, GamutMap::Css).unwrap(),
+        input
+    );
 }
 
 #[test]
@@ -47,11 +49,15 @@ fn css_mapping_returns_extremes_for_out_of_range_lightness() {
     let dark = c(ColorSpace::Oklch, [-0.2, 0.25, 60.0]);
     let light = c(ColorSpace::Oklch, [1.3, 0.25, 60.0]);
     assert_eq!(
-        map_to_gamut(dark, ColorSpace::Srgb, GamutMap::Css).unwrap().channels(),
+        map_to_gamut(dark, ColorSpace::Srgb, GamutMap::Css)
+            .unwrap()
+            .channels(),
         [0.0; 3]
     );
     assert_eq!(
-        map_to_gamut(light, ColorSpace::Srgb, GamutMap::Css).unwrap().channels(),
+        map_to_gamut(light, ColorSpace::Srgb, GamutMap::Css)
+            .unwrap()
+            .channels(),
         [1.0; 3]
     );
 }
