@@ -469,6 +469,79 @@ export async function createPfxColorCore(wasm) {
         finite(options.tetradicAngle ?? 60, "tetradicAngle"),
         target, mapping), "harmony"));
     },
+    /**
+     * Opt-in CSS gradient geometry with real CSS pixel dimensions.
+     * It does not affect the existing normalized createGradient API.
+     * Stop positions are signed fractions; 0.2 means 20%, 1.2 means 120%.
+     * samplePixel takes CSS pixel coordinates (pixel centers: x+.5, y+.5).
+     */
+    createCssGradient(stops, options = {}) {
+      if (!Array.isArray(stops) || stops.length < 2 || stops.length > 256) {
+        throw new RangeError("CSS gradient requires 2..256 stops");
+      }
+      const width = finite(options.width, "width");
+      const height = finite(options.height, "height");
+      if (width <= 0 || height <= 0) {
+        throw new RangeError("CSS gradient dimensions must be positive");
+      }
+      const kind = code(GradientKinds, options.kind ?? "linear", "gradient kind");
+      const shapes = { circle: 0, ellipse: 1 };
+      const extents = {
+        "closest-side": 0, "farthest-side": 1,
+        "closest-corner": 2, "farthest-corner": 3, explicit: 4,
+      };
+      const shape = code(shapes, options.radialShape ?? "ellipse", "radial shape");
+      const extent = code(extents, options.radialExtent ?? "farthest-corner", "radial extent");
+      const { target, mapping } = paletteDefaults(options);
+      const { space, hue } = mixDefaults(options);
+      if (options.repeating != null && typeof options.repeating !== "boolean") {
+        throw new TypeError("repeating must be a boolean");
+      }
+      const handle = e.pfx_css_gradient_new(
+        kind, width, height, finite(options.angle ?? 90, "angle"),
+        finite(options.centerX ?? width / 2, "centerX"),
+        finite(options.centerY ?? height / 2, "centerY"),
+        shape, extent,
+        finite(options.radiusX ?? 0, "radiusX"),
+        finite(options.radiusY ?? 0, "radiusY"),
+        options.repeating === true ? 1 : 0, space, target, hue, mapping,
+      );
+      if (!handle) throw new Error("Invalid CSS gradient geometry");
+      try {
+        for (const stop of stops) {
+          colorWith(stop.color, ptr => status(
+            e.pfx_css_gradient_add_stop(handle, finite(stop.position, "stop position"), ptr),
+            "add CSS gradient stop"));
+        }
+      } catch (error) {
+        e.pfx_css_gradient_free(handle);
+        throw error;
+      }
+      let disposed = false;
+      const active = () => {
+        if (disposed) throw new Error("PFx CSS gradient has been disposed");
+      };
+      return Object.freeze({
+        samplePixel(x, y) {
+          active();
+          return outputWith(out => status(
+            e.pfx_css_gradient_sample_pixel(handle, finite(x, "x"), finite(y, "y"), out),
+            "CSS gradient pixel sample"));
+        },
+        sampleProgress(position) {
+          active();
+          return outputWith(out => status(
+            e.pfx_css_gradient_sample_progress(handle, finite(position, "position"), out),
+            "CSS gradient progress sample"));
+        },
+        dispose() {
+          if (!disposed) {
+            disposed = true;
+            e.pfx_css_gradient_free(handle);
+          }
+        },
+      });
+    },
     createGradient(stops, options = {}) {
       if (!Array.isArray(stops) || stops.length < 2 || stops.length > 256) {
         throw new RangeError("Gradient requires 2..256 stops");
