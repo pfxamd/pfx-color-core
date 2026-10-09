@@ -10,12 +10,12 @@
 //! C/WASM/JS callers must use ABI revision pfx_abi_version() == 1.
 
 use pfx_color_core::{
-    anchored_palette, contrast_ratio, difference, format_css, format_hex,
-    generate_color_study, generate_custom_harmony, generate_harmony, interpolate, is_in_gamut,
-    map_to_gamut, parse_css, ramp_palette, relative_luminance, tonal_palette, Color, ColorSpace,
-    ColorStudy, ColorStudyOptions, DifferenceMethod, GamutMap, Gradient, GradientKind,
-    GradientOptions, GradientStop, Harmony, HarmonyOptions, HarmonyScheme, HueMethod, Palette,
-    RampOptions, TonalOptions,
+    anchored_palette, contrast_ratio, difference, format_css, format_hex, generate_color_study,
+    generate_custom_harmony, generate_harmony, interpolate, is_in_gamut, map_to_gamut, parse_css,
+    ramp_palette, relative_luminance, tonal_palette, Color, ColorSpace, ColorStudy,
+    ColorStudyOptions, DifferenceMethod, GamutMap, Gradient, GradientKind, GradientOptions,
+    GradientStop, Harmony, HarmonyOptions, HarmonyScheme, HueMethod, Palette, RampOptions,
+    TonalOptions,
 };
 
 const NULL: i32 = -1;
