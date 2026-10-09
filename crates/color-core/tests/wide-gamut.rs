@@ -53,11 +53,7 @@ fn adobe_prophoto_extended_channels_round_trip() {
             [0.9, 0.3, 0.1],
         ] {
             let source = color(space, input);
-            let result = source
-                .to(ColorSpace::XyzD65)
-                .unwrap()
-                .to(space)
-                .unwrap();
+            let result = source.to(ColorSpace::XyzD65).unwrap().to(space).unwrap();
             near_channels(result.channels(), input, 2e-8);
         }
     }
