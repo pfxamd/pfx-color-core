@@ -181,6 +181,42 @@ int main(void) {
     pfx_css_missing_color_free(css_b);
     pfx_css_missing_color_free(css_out);
 
+
+    /* Pixel-dimension CSS gradient ABI, independent of legacy normalized handle. */
+    PfxCssGradient *css_pixels = pfx_css_gradient_new(
+        PFX_GRADIENT_LINEAR, 240.0, 120.0,
+        45.0, 120.0, 60.0, 1, 3, 0.0, 0.0, 0,
+        PFX_SRGB, PFX_SRGB, PFX_HUE_SHORTER, PFX_GAMUT_CLIP
+    );
+    CHECK(css_pixels != NULL);
+    CHECK(pfx_css_gradient_add_stop(css_pixels, 0.0, &black) == 0);
+    CHECK(pfx_css_gradient_add_stop(css_pixels, 1.0, &white) == 0);
+    CHECK(pfx_css_gradient_sample_pixel(css_pixels, 0.0, 0.0, &out) == 0);
+    CHECK(fabs(out.channels[0]) < 1e-12);
+    CHECK(pfx_css_gradient_sample_pixel(css_pixels, 0.0, 120.0, &out) == 0);
+    CHECK(fabs(out.channels[0] - 1.0 / 3.0) < 1e-10);
+    CHECK(pfx_css_gradient_sample_progress(css_pixels, 0.5, &out) == 0);
+    CHECK(fabs(out.channels[0] - 0.5) < 1e-12);
+    CHECK(pfx_css_gradient_add_stop(css_pixels, NAN, &black) < 0);
+    CHECK(pfx_css_gradient_sample_pixel(css_pixels, NAN, 50, &out) < 0);
+    pfx_css_gradient_free(css_pixels);
+    CHECK(pfx_css_gradient_new(
+        PFX_GRADIENT_RADIAL, 0.0, 100.0, 0.0, 50.0, 50.0,
+        1, 3, 0.0, 0.0, 0, PFX_SRGB, PFX_SRGB,
+        PFX_HUE_SHORTER, PFX_GAMUT_CLIP
+    ) == NULL);
+    PfxCssGradient *css_radial = pfx_css_gradient_new(
+        PFX_GRADIENT_RADIAL, 240.0, 120.0,
+        0.0, 120.0, 60.0, 1, 3, 0.0, 0.0, 0,
+        PFX_SRGB, PFX_SRGB, PFX_HUE_SHORTER, PFX_GAMUT_CLIP
+    );
+    CHECK(css_radial != NULL);
+    CHECK(pfx_css_gradient_add_stop(css_radial, 0.0, &black) == 0);
+    CHECK(pfx_css_gradient_add_stop(css_radial, 1.0, &white) == 0);
+    CHECK(pfx_css_gradient_sample_pixel(css_radial, 240, 120, &out) == 0);
+    CHECK(fabs(out.channels[0] - 1) < 1e-9);
+    pfx_css_gradient_free(css_radial);
+
     CHECK(pfx_color_convert(NULL, PFX_SRGB, &out) == -1);
     CHECK(pfx_color_set(&out, 888, 0.0, 0.0, 0.0, 1.0) == -2);
     CHECK(isnan(pfx_color_difference(NULL, &white, PFX_DELTA_E_OK)));
