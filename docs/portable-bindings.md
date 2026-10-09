@@ -123,3 +123,24 @@ lightness, chroma, hueRange, toneRange, target, gamut and randomSeed options.
 It returns {scheme, colors}; each color contains {index, color, mapped, oklch}.
 No external random-number or palette dependencies are used. The existing
 browser Color Study is not changed or replaced by these bindings yet.
+
+
+## Verified standalone build bundles
+
+After the full Rust CI workflow succeeds, the workflow attaches two downloadable
+artifacts on its GitHub Actions run page (retained for 30 days):
+
+- pfx-color-core-wasm-{commit}: the real compiled .wasm, its JavaScript wrapper,
+  Apache-2.0 license and integration documentation.
+- pfx-color-core-linux-{commit}: native .so and .a, matching C header,
+  license and documentation.
+
+These are build outputs, not dynamic online dependencies. Copy the relevant
+compiled library and accompanying interface into the destination project;
+it should not need the PFx Git repository at runtime.
+
+The Rust CI compiles and tests the native program, WebAssembly JavaScript
+integration, scientific fixtures, deterministic Color Study and cross-engine
+compatibility before bundling. A successful Linux binary build alone does
+not claim validation on macOS or Windows; those native targets need their
+own compiler and integration runs.
