@@ -14,6 +14,7 @@ A portable, first-party color science implementation in Rust with **zero externa
 - **Palettes:** tonal scales, two-anchor ramps and multiple-anchor ramps
 - **Harmonies:** analogous, complementary, split-complementary, triadic, tetradic, square, custom hue offsets
 - **Gradients:** ordered and duplicate-position hard stops, color-space interpolation, linear/radial/conic sampling in a normalized unit square
+- HSL/HWB/HSV coordinate conversions, absolute CSS Color 4 parsing (including all 148 named colors), CSS coordinate serialization, explicit-gamut HEX output
 - Native Rust and wasm32-unknown-unknown compilation checks
 
 ## API example

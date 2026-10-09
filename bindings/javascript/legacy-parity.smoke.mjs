@@ -279,3 +279,16 @@ test("CSS gamut reduction stays perceptually close to legacy CSS mapping", () =>
     assert.equal(rust.isInGamut(rustResult, "srgb"), true);
   }
 });
+
+
+test("all 148 CSS named color keywords match legacy and canonical HEX", async () => {
+  const reference = JSON.parse(await readFile(
+    new URL("./css-names.fixture.json", import.meta.url), "utf8"));
+  assert.equal(Object.keys(reference).length, 148);
+  for (const [name, hex] of Object.entries(reference)) {
+    const parsed = rust.parseCss(name);
+    assert.equal(parsed.space, "srgb", name);
+    assert.equal(rust.formatHex(parsed), hex, name);
+    assert.equal(legacy.formatHex(name).toLowerCase(), hex, "legacy " + name);
+  }
+});

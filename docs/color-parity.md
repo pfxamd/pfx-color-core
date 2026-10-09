@@ -26,9 +26,10 @@ in both implementations. Passing the gate does **not** imply parity elsewhere. W
 | Alpha-aware interpolation (shared numeric spaces) | Present, executable parity gate | Candidate for opt-in numeric API only |
 | RGB gamut membership | Present, executable parity gate | Candidate for opt-in numeric API only |
 | Tonal palettes, named harmonies and multi-stop gradients (shared cases) | Present, executable parity gate | Candidate for opt-in numeric API only |
-| CSS hex / rgb() / hsl() / lab() parsing | Missing | **Block migration of picker/workspace** |
-| CSS serialization, hex formatting/rounding | Missing | **Block all direct swaps** |
-| HSL / HSV / HWB / OKHSL / OKHSV, A98, ProPhoto, Lab-D65 | Missing | **Block picker and wide-format conversion swap** |
+| CSS absolute color parsing: HEX, rgb(), hsl(), hwb(), lab(), lch(), oklab(), oklch(), color() and 148 named colors | Implemented subset; 148-name full parity gate | Advanced CSS forms still block direct picker/workspace swap |
+| CSS serialization and hex output | Implemented for the supported numeric forms, with explicit gamut mapping | Precision/missing-value semantics must still be checked |
+| HSL / HSV / HWB | Implemented and cross-checked in numeric parity tests | Eligible for future opt-in adapter |
+| OKHSL / OKHSV, A98, ProPhoto, Lab-D65 | Missing | Keep TypeScript for these conversions |
 | APCA contrast | Missing | Keep TypeScript |
 | DeltaE ITP / Jz / HCT | Missing | Keep TypeScript |
 | CSS Local-MINDE gamut mapping | W3C binary search with local MINDE added and cross-checked | Parity uses perceptual tolerance; keep old UI until threshold cases pass |
@@ -48,7 +49,7 @@ in both implementations. Passing the gate does **not** imply parity elsewhere. W
 4. Once numeric parity passes, future work can introduce a **separate opt-in
    adapter**, with explicit input compatibility and fallback only in the legacy
    layer. The Rust core remains completely free of third-party crates.
-5. Migrate parsing, formatting, CSS gamut mapping, missing channels, workspace
+5. Finish advanced parsing/formatting, missing channels, additional spaces, workspace
    and Color Study with independent tests before removing the TypeScript path.
 6. Browser-level UI parity and real device regression tests must precede any
    production default switch.

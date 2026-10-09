@@ -26,7 +26,8 @@ owned palette, gradient and buffer handles must be freed by matching pfx_*_free
 functions exactly once. Color input/output pointers may alias.
 
 The C ABI exposes:
-- sRGB, P3, Rec.2020, XYZ, Lab and OKLab conversion;
+- sRGB, P3, Rec.2020, XYZ, Lab and OKLab conversion, plus HSL/HWB/HSV numeric controls;
+- CSS absolute color parsing (with supported syntax) and coordinate/hex formatting;
 - CIE76/CIEDE2000/OK differences, WCAG ratio and luminance;
 - interpolation, gamut check and mapping (clip, radial Oklch or W3C Local MINDE);
 - tonal and two-color ramp palettes;
@@ -66,7 +67,7 @@ Example JavaScript:
 The module does NOT copy color math into JavaScript. It sends typed numeric values
 through the ABI into Rust WASM. WASM is **not** automatically wired into the
 existing PFx Colors UI; integration of the UI is a separate migration step.
-The JS API includes convert, difference, contrast, luminance, interpolate,
+The JS API includes parseCss, formatCss, formatHex, convert, difference, contrast, luminance, interpolate,
 isInGamut, mapGamut, tonalPalette, rampPalette, harmony and createGradient.
 The JS gradient returns an owned object; call dispose() when finished.
 
@@ -87,3 +88,27 @@ using built-in node:test, not a mock or JavaScript reimplementation.
 - The ABI revision is 1, but these bindings have not yet been published as a
   production release. Further platform portability and browser checks should
   precede a release.
+
+
+## Absolute CSS parsing and unsupported input
+
+The parser supports HEX, modern/legacy RGB and HSL, HWB, Lab, LCH, Oklab,
+Oklch, the supported color() spaces and all 148 standard named-color keywords.
+Its grammar is bounded to 1024 bytes. Invalid syntax, missing-channel none,
+calc(), var(), and relative color syntax are **rejected**, not approximated.
+
+The C buffer API uses pfx_buffer_new and pfx_buffer_free to provide a safe
+owner-managed byte region for WebAssembly consumers. pfx_css_parse accepts
+UTF-8 bytes; pfx_css_format writes UTF-8 plus a final NUL and reports bytes
+written (excluding terminator). Caller pointers must be valid and the buffer
+capacity must exceed the returned byte count.
+
+The JS interface handles byte ownership, UTF-8 encoding and decoding. All
+numerical color operations occur in Rust. Example:
+
+    const picked = core.parseCss("hsl(210 65% 55% / 75%)");
+    const canonical = core.formatCss(picked);
+    const hex = core.formatHex(picked, "css");
+
+Full parser compatibility, CSS missing-component modeling, source-accurate
+serialization of unsupported forms, and UI integration remain migration gates.

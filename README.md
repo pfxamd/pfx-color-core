@@ -60,7 +60,7 @@ Apache-2.0. Copyright 2026 PFxamd.
 
 ## Rust computational engine (in progress)
 
-A new dependency-free Rust engine is being developed in [`crates/color-core/`](crates/color-core/). It now provides reference-tested conversions, color differences, contrast, interpolation, gamut operations, deterministic palettes, geometric harmony schemes and multi-stop gradients. The published `v0.1.0` and the PFx Colors UI continue using the existing TypeScript implementation. See [Rust migration plan](docs/rust-migration.md).
+A new dependency-free Rust engine is being developed in [`crates/color-core/`](crates/color-core/). It now provides reference-tested conversions, color differences, contrast, interpolation, gamut operations, deterministic palettes, geometric harmony schemes, multi-stop gradients and an expanding dependency-free CSS parser/formatter. The published `v0.1.0` and the PFx Colors UI continue using the existing TypeScript implementation. See [Rust migration plan](docs/rust-migration.md).
 
 ## Portable Rust bindings (development)
 
