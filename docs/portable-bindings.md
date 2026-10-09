@@ -145,9 +145,16 @@ numerical color operations occur in Rust. Example:
     const canonical = core.formatCss(picked);
     const hex = core.formatHex(picked, "css");
 
-Full parser compatibility, CSS missing-component modeling, source-accurate
-serialization of unsupported forms, and UI integration remain migration gates.
+Full parser compatibility, relative CSS syntax, source-accurate serialization of unsupported forms, and UI integration remain migration gates. A separate opt-in missing-component interface is described below; the original numeric parser still rejects `none`.
 
+
+## Separate CSS missing-component ABI (opt-in)
+
+The dependency-free Rust `CssColor` representation stores a numeric `Color` and a 4-bit missing mask: bit 0/1/2 for individual channels and bit 3 for alpha. Its absolute-color parser accepts modern CSS `none`, including alpha. Formatting preserves `none` and ordinary conversion consumes missing values as zero; interpolation carries individually analogous components and complete unmatched sets, borrows from the other endpoint, and retains the missing mask if both endpoints omit the same channel. Unsupported `calc()`, `var()`, relative syntax and comma-based legacy `none` are rejected.
+
+The original 40-byte `PfxColor` structure and ABI revision 1 remain unchanged. Additional `PfxCssColor` (48 bytes) and `pfx_css_missing_color_*` functions are provided in `bindings/c/pfx_color_core.h`. The independent JavaScript/WASM bridge exposes `parseCssMissing(text)`, `formatCssMissing(value)`, `convertCssMissing(value,target)` and `interpolateCssMissing(first,second,fraction,options)`. They return a `missingMask` alongside numeric channels and alpha. This is **not** automatically invoked by the deployed PFx Colors website or the legacy `parseCss`/picker APIs; do not silently replace their behavior.
+
+The new API is tested in Rust, in a real linked C program, in Node.js WASM and in Chromium/Firefox browser viewports. Test completion for any particular commit must still be verified in GitHub Actions.
 
 ## Seeded Color Study
 
