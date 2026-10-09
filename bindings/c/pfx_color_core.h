@@ -200,6 +200,29 @@ int32_t pfx_study_mapped(const PfxStudy *study, uint32_t index);
 double pfx_study_oklch(const PfxStudy *study, uint32_t index, uint32_t coordinate);
 void pfx_study_free(PfxStudy *study);
 
+/* Palette extraction from DECODED unpremultiplied sRGB RGBA8 pixels.
+ * Encoded JPEG/PNG/WebP bytes must first be decoded by the caller.
+ * Byte length must be exactly width*height*4, at most 64 MiB.
+ * Region width=height=0 means whole image; otherwise both must be >0.
+ * NULL indicates invalid pixels/configuration or no eligible pixels.
+ * The output handle owns the colors, not the input pixel data.
+ */
+typedef struct PfxImagePalette PfxImagePalette;
+PfxImagePalette *pfx_image_new(
+    const uint8_t *pixels, uint32_t byte_length, uint32_t width, uint32_t height,
+    uint32_t count, uint32_t stride, uint32_t max_samples,
+    uint32_t alpha_threshold, uint32_t ignore_near_white,
+    uint32_t region_x, uint32_t region_y,
+    uint32_t region_width, uint32_t region_height
+);
+uint32_t pfx_image_len(const PfxImagePalette *image);
+uint32_t pfx_image_sampled(const PfxImagePalette *image);
+uint32_t pfx_image_eligible(const PfxImagePalette *image);
+int32_t pfx_image_get(const PfxImagePalette *image, uint32_t index, PfxColor *out);
+int32_t pfx_image_population(const PfxImagePalette *image, uint32_t index);
+double pfx_image_proportion(const PfxImagePalette *image, uint32_t index);
+void pfx_image_free(PfxImagePalette *image);
+
 #ifdef __cplusplus
 }
 #endif
