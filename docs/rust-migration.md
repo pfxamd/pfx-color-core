@@ -7,8 +7,9 @@
 
 - **Dependency-free Rust math** (`crates/color-core/`): f64 conversions for sRGB, linear RGB, P3, Rec.2020, XYZ D50/D65, Lab D50/**D65**, LCH, OKLab/OKLCH, HSL/HWB/HSV, Adobe RGB (A98) and ProPhoto.
 - **Difference, contrast and gamut**: CIE76, CIEDE2000, Delta-E OK; opaque sRGB WCAG 2.2; explicit clip/Oklch/CSS Local MINDE mapping.
-- **Interpolation**: alpha-aware rectangular/polar mixing, shorter/longer/increasing/decreasing/**raw** hue methods, HSL/HWB/HSV hue semantics and powerless-hue handling. CSS missing `none` values are still unsupported.
+- **Interpolation**: alpha-aware rectangular/polar mixing, shorter/longer/increasing/decreasing/**raw** hue methods, HSL/HWB/HSV hue semantics and powerless-hue handling. The separate opt-in `CssColor` layer now handles explicitly missing channel/alpha values in supported modern absolute CSS syntax; the legacy numeric API does not.
 - **Design functions**: deterministic tonal/ramp/anchored palettes, standard/custom harmonies, seeded 10-swatch Color Study, and 2–256-stop linear/radial/conic gradient sampling in normalized coordinates.
+- **Opt-in CSS missing components**: `css_missing.rs` preserves per-channel and alpha `none` masks, serializes them, borrows analogous components on interpolation, uses zero for ordinary numeric conversions, and exposes additive C/WASM operations. Existing numeric parsing and production picker remain unchanged.
 - **Bounded CSS color IO**: absolute CSS formats (HEX, RGB/HSL/HWB, Lab/LCH/OKLab/OKLCH, supported `color()` spaces, 148 named colors) and formatting. Not a complete CSS Color 4 interpreter.
 - **Decoded RGBA8 image palette extractor**: deterministic Oklab clustering of caller-decoded pixel buffers; 1–32 swatches, bounded memory and samples, region/alpha/near-white options. Not an image file decoder, an ICC color-managed pipeline or a drop-in ColorThief implementation.
 - **Portable consumption**: versioned C ABI, WASM JS wrapper without external runtime packages, optional Rust-backed picker and JavaScript workspace/history. Color math remains inside Rust.
@@ -29,7 +30,7 @@
 
 | Priority | Work not yet complete | Required acceptance |
 | --- | --- | --- |
-| P0 | CSS missing-channel `none` model | Explicit optional channel representation; parser/interpolation/formatting/FFI round trips and numeric/reference fixtures; no silent zero substitution |
+| P0 (initial API implemented) | Complete `none` conformance and UI propagation | Dedicated opt-in parser/formatter/interpolator and C/WASM support exist. Extend powerless/cross-space fixtures and propagate deliberately into optional picker, workspace and gradient integrations before claiming full compatibility |
 | P1 | Relative color expressions and `calc()`/`var()` | Defined resolution contract, conformance fixtures and correctly rejected unsupported expressions |
 | P2 | Accurate CSS gradient layout | Real-size geometry and visual pixel regression in Chromium/Firefox; normalized unit-square calculations alone do not qualify |
 | P3 | Missing specialized color spaces/differences | Prioritized, separately licensed reference-driven additions (e.g. OKHSL/OKHSV, ITP/Jz/HCT). APCA is a separate licensing decision |
