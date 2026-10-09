@@ -156,10 +156,7 @@ pub fn extract_image_palette(
     if options.count == 0 || options.count > MAX_IMAGE_PALETTE_COLORS {
         return Err(ImageError::InvalidCount);
     }
-    if options.stride == 0
-        || options.max_samples == 0
-        || options.max_samples > MAX_IMAGE_SAMPLES
-    {
+    if options.stride == 0 || options.max_samples == 0 || options.max_samples > MAX_IMAGE_SAMPLES {
         return Err(ImageError::InvalidSampling);
     }
     let region = options.region.unwrap_or(ImageRegion {
@@ -171,7 +168,10 @@ pub fn extract_image_palette(
     if region.width == 0
         || region.height == 0
         || region.x.checked_add(region.width).is_none_or(|v| v > width)
-        || region.y.checked_add(region.height).is_none_or(|v| v > height)
+        || region
+            .y
+            .checked_add(region.height)
+            .is_none_or(|v| v > height)
     {
         return Err(ImageError::InvalidRegion);
     }
@@ -200,8 +200,7 @@ pub fn extract_image_palette(
                 continue;
             }
             eligible_pixels += 1;
-            let key =
-                ((u16::from(r >> 3)) << 10) | ((u16::from(g >> 3)) << 5) | u16::from(b >> 3);
+            let key = ((u16::from(r >> 3)) << 10) | ((u16::from(g >> 3)) << 5) | u16::from(b >> 3);
             let cell = histogram.entry(key).or_default();
             cell.count += 1;
             cell.rgb_sums[0] += u64::from(r);
@@ -215,7 +214,9 @@ pub fn extract_image_palette(
     }
     let mut points = Vec::with_capacity(histogram.len());
     for cell in histogram.into_values() {
-        let rgb = cell.rgb_sums.map(|sum| sum as f64 / (cell.count as f64 * 255.0));
+        let rgb = cell
+            .rgb_sums
+            .map(|sum| sum as f64 / (cell.count as f64 * 255.0));
         let c = Color::new(ColorSpace::Srgb, rgb, 1.0)?;
         let oklab = c.to(ColorSpace::Oklab)?.channels();
         points.push(Point {
