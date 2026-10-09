@@ -560,6 +560,37 @@ export async function createPfxColorCore(wasm) {
             e.pfx_css_raster_free(image);
           }
         },
+        /**
+         * Color-critical output should use rasterRGBA8(). This is the
+         * separately versioned accelerated preview that interpolates a
+         * bounded RGBA8 lookup per stop interval.
+         */
+        rasterPreviewRGBA8(widthPixels, heightPixels) {
+          active();
+          if (!Number.isInteger(widthPixels) || !Number.isInteger(heightPixels)
+            || widthPixels <= 0 || heightPixels <= 0
+            || widthPixels * heightPixels > 1048576) {
+            throw new RangeError("CSS raster preview pixel dimensions are invalid");
+          }
+          if (!e.pfx_css_gradient_raster_preview_rgba8) {
+            throw new Error("Rust CSS preview raster ABI unavailable");
+          }
+          const image = e.pfx_css_gradient_raster_preview_rgba8(
+            handle, widthPixels, heightPixels);
+          if (!image) throw new Error("Rust CSS preview raster could not be generated");
+          try {
+            const bytes = e.pfx_css_raster_len(image);
+            const pointer = e.pfx_css_raster_ptr(image);
+            if (!pointer || bytes !== widthPixels * heightPixels * 4) {
+              throw new Error("Invalid Rust CSS preview raster buffer");
+            }
+            return new Uint8ClampedArray(
+              new Uint8Array(e.memory.buffer, pointer, bytes)
+            );
+          } finally {
+            e.pfx_css_raster_free(image);
+          }
+        },
         dispose() {
           if (!disposed) {
             disposed = true;
