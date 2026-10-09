@@ -371,6 +371,17 @@ test("CSS gradients support radial shapes, repeated offsets, and nonmonotonic ha
   try {
     assert.equal(hard.sampleProgress(0.6).channels[0], 1);
   } finally { hard.dispose(); }
+  const zeroSpan = api.createCssGradient([
+    { position: 0.4, color: color("srgb", [1, 0, 0]) },
+    { position: 0.4, color: color("srgb", [1, 1, 1]) },
+    { position: 0.4, color: color("srgb", [0, 0, 1]) },
+  ], { width: 200, height: 100, repeating: true,
+       space: "srgb", target: "srgb", gamut: "clip" });
+  try {
+    const rgb = zeroSpan.sampleProgress(0.95).channels;
+    rgb.forEach((value, i) =>
+      assert.ok(Math.abs(value - [0.75, 0.5, 0.75][i]) < 1e-12));
+  } finally { zeroSpan.dispose(); }
   assert.throws(() => api.createCssGradient([
     { position: 0, color: black }, { position: 1, color: white },
   ], { width: 0, height: 100 }), /positive/);
