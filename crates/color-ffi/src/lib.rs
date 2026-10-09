@@ -240,7 +240,7 @@ pub unsafe extern "C" fn pfx_color_convert(
     target: u32,
     out: *mut PfxColor,
 ) -> i32 {
-    let result = (|| Ok(read(input)?.to(space(target)?).map_err(|_| COLOR)?))();
+    let result = (|| read(input)?.to(space(target)?).map_err(|_| COLOR))();
     finish_color(result, out)
 }
 
