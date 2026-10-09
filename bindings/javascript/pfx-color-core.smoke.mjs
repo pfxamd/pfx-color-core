@@ -390,3 +390,36 @@ test("CSS gradients support radial shapes, repeated offsets, and nonmonotonic ha
   ], { width: 200, height: 100, kind: "radial",
        radialExtent: "explicit", radiusX: 0, radiusY: 10 }), /geometry/);
 });
+
+test("bulk RGBA8 gradient raster matches scalar Rust samples without leaking ownership", () => {
+  const start = color("srgb", [1, 0, 0], 0.3);
+  const end = color("srgb", [0, 0, 1], 1);
+  const grad = api.createCssGradient([
+    { position: 0, color: start },
+    { position: 1, color: end },
+  ], { width: 7, height: 5, kind: "linear", angle: 36,
+       space: "srgb", target: "srgb", gamut: "clip" });
+  try {
+    const raster = grad.rasterRGBA8(7, 5);
+    assert.ok(raster instanceof Uint8ClampedArray);
+    assert.equal(raster.length, 7 * 5 * 4);
+    for (const [x, y] of [[0, 0], [3, 2], [6, 4]]) {
+      const pixel = grad.samplePixel(x + 0.5, y + 0.5);
+      const off = (y * 7 + x) * 4;
+      for (let channel = 0; channel < 3; channel++) {
+        assert.ok(Math.abs(raster[off + channel] - Math.round(pixel.channels[channel] * 255)) <= 1);
+      }
+      assert.ok(Math.abs(raster[off + 3] - Math.round(pixel.alpha * 255)) <= 1);
+    }
+    assert.throws(() => grad.rasterRGBA8(6, 5), /could not be generated/);
+    assert.throws(() => grad.rasterRGBA8(0, 5), /invalid/);
+    assert.throws(() => grad.rasterRGBA8(2000, 1000), /invalid/);
+    const snapshot = [...raster];
+    const later = grad.rasterRGBA8(7, 5);
+    assert.deepEqual([...raster], snapshot, "caller-owned copy must survive Rust release");
+    assert.deepEqual([...later], snapshot, "repeated calls deterministic");
+  } finally {
+    grad.dispose();
+  }
+  assert.throws(() => grad.rasterRGBA8(7, 5), /disposed/);
+});
