@@ -10,12 +10,12 @@
 //! C/WASM/JS callers must use ABI revision pfx_abi_version() == 1.
 
 use pfx_color_core::{
-    anchored_palette, apca_contrast, contrast_ratio, difference, format_css, format_hex, generate_color_study,
-    generate_custom_harmony, generate_harmony, interpolate, is_in_gamut, map_to_gamut, parse_css,
-    ramp_palette, relative_luminance, tonal_palette, Color, ColorSpace, ColorStudy,
-    ColorStudyOptions, DifferenceMethod, GamutMap, Gradient, GradientKind, GradientOptions,
-    GradientStop, Harmony, HarmonyOptions, HarmonyScheme, HueMethod, Palette, RampOptions,
-    TonalOptions,
+    anchored_palette, apca_contrast, contrast_ratio, difference, format_css, format_hex,
+    generate_color_study, generate_custom_harmony, generate_harmony, interpolate, is_in_gamut,
+    map_to_gamut, parse_css, ramp_palette, relative_luminance, tonal_palette, Color, ColorSpace,
+    ColorStudy, ColorStudyOptions, DifferenceMethod, GamutMap, Gradient, GradientKind,
+    GradientOptions, GradientStop, Harmony, HarmonyOptions, HarmonyScheme, HueMethod, Palette,
+    RampOptions, TonalOptions,
 };
 
 const NULL: i32 = -1;
@@ -283,7 +283,10 @@ pub unsafe extern "C" fn pfx_color_difference(
 /// # Safety
 /// Inputs must be valid live PfxColor pointers.
 #[no_mangle]
-pub unsafe extern "C" fn pfx_color_apca(foreground: *const PfxColor, background: *const PfxColor) -> f64 {
+pub unsafe extern "C" fn pfx_color_apca(
+    foreground: *const PfxColor,
+    background: *const PfxColor,
+) -> f64 {
     (|| apca_contrast(read(foreground)?, read(background)?).map_err(|_| COLOR))()
         .unwrap_or(f64::NAN)
 }
