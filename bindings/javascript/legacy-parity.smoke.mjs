@@ -29,15 +29,17 @@ const rust = await createPfxColorCore(wasmBytes);
 const legacy = new ColorJsAdapter();
 const srgb = (channels, alpha = 1) => ({ space: "srgb", channels, alpha });
 const ts = (input) => ({
-  space: input.space === "display-p3" ? "p3" : input.space,
+  space: input.space === "display-p3" ? "p3" : input.space === "a98-rgb" ? "a98rgb" : input.space === "prophoto-rgb" ? "prophoto" : input.space,
   coordinates: input.channels,
   alpha: input.alpha,
 });
-const jsSpace = (space) => space === "display-p3" ? "p3" : space;
+const jsSpace = (space) => space === "display-p3" ? "p3" : space === "a98-rgb" ? "a98rgb" : space === "prophoto-rgb" ? "prophoto" : space;
 const epsilon = {
   srgb: 0.0003,
   "srgb-linear": 0.0003,
   "display-p3": 0.0003,
+  "a98-rgb": 0.0003,
+  "prophoto-rgb": 0.0003,
   rec2020: 0.0003,
   "xyz-d65": 0.0003,
   "xyz-d50": 0.0003,
@@ -89,6 +91,8 @@ const samples = [
   srgb([0.03, 0.08, 0.22]),
   srgb([0.7, 0.3, 0.85]),
   { space: "display-p3", channels: [0.23, 0.42, 0.71], alpha: 0.8 },
+  { space: "a98-rgb", channels: [0.21, 0.61, 0.39], alpha: 0.6 },
+  { space: "prophoto-rgb", channels: [0.18, 0.65, 0.36], alpha: 0.9 },
 ];
 
 test("shared color-space conversions agree for chromatic reference samples", () => {
@@ -136,7 +140,7 @@ test("WCAG contrast stays bounded; legacy and standard coefficients differ", () 
   let compared = 0;
   for (const a of opaque) {
     for (const b of opaque) {
-      if (a.space === "display-p3" || b.space === "display-p3") continue;
+      if (a.space !== "srgb" || b.space !== "srgb") continue;
       const rustRatio = rust.contrast(a, b);
       const tsRatio = legacy.contrast(ts(a), ts(b), "wcag21").value;
       largestDifference = Math.max(largestDifference, Math.abs(rustRatio - tsRatio));
