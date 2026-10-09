@@ -11,8 +11,8 @@
 
 use pfx_color_core::{
     contrast_ratio, difference, generate_harmony, interpolate, is_in_gamut, map_to_gamut,
-    ramp_palette, relative_luminance, tonal_palette, Color, ColorSpace, DifferenceMethod,
-    GamutMap, Gradient, GradientKind, GradientOptions, GradientStop, HarmonyOptions, HarmonyScheme,
+    ramp_palette, relative_luminance, tonal_palette, Color, ColorSpace, DifferenceMethod, GamutMap,
+    Gradient, GradientKind, GradientOptions, GradientStop, HarmonyOptions, HarmonyScheme,
     HueMethod, Palette, RampOptions, TonalOptions,
 };
 
@@ -246,7 +246,9 @@ pub unsafe extern "C" fn pfx_color_convert(
 
 fn finish_color(result: Result<Color, i32>, out: *mut PfxColor) -> i32 {
     match result {
-        Ok(value) => unsafe { write(out, value) }.map(|_| 0).unwrap_or_else(|e| e),
+        Ok(value) => unsafe { write(out, value) }
+            .map(|_| 0)
+            .unwrap_or_else(|e| e),
         Err(e) => e,
     }
 }
@@ -301,10 +303,8 @@ pub unsafe extern "C" fn pfx_color_map(
     method: u32,
     out: *mut PfxColor,
 ) -> i32 {
-    let result = (|| {
-        map_to_gamut(read(input)?, space(target)?, gamut_method(method)?)
-            .map_err(|_| COLOR)
-    })();
+    let result =
+        (|| map_to_gamut(read(input)?, space(target)?, gamut_method(method)?).map_err(|_| COLOR))();
     finish_color(result, out)
 }
 
@@ -481,7 +481,12 @@ pub unsafe extern "C" fn pfx_palette_get(
     out: *mut PfxColor,
 ) -> i32 {
     let result = (|| {
-        let entry = palette.as_ref().ok_or(NULL)?.values.get(index as usize).ok_or(INDEX)?;
+        let entry = palette
+            .as_ref()
+            .ok_or(NULL)?
+            .values
+            .get(index as usize)
+            .ok_or(INDEX)?;
         Ok(entry.color)
     })();
     finish_color(result, out)
@@ -589,7 +594,10 @@ pub unsafe extern "C" fn pfx_gradient_add_stop(
 ) -> i32 {
     let result = (|| {
         let gradient = gradient.as_mut().ok_or(NULL)?;
-        if gradient.stops.len() >= LIMIT || !position.is_finite() || !(0.0..=1.0).contains(&position) {
+        if gradient.stops.len() >= LIMIT
+            || !position.is_finite()
+            || !(0.0..=1.0).contains(&position)
+        {
             return Err(COLOR);
         }
         let color = read(color)?;
