@@ -10,6 +10,7 @@ First-party color mathematics, design tools and portable interfaces, with **zero
 - Deterministic tonal/anchored/ramp palettes, named/custom harmonies, linear/radial/conic gradient sampling
 - Seeded 10-color Color Study for the existing UI's design controls
 - Absolute CSS color parsing/serialization, HEX (with explicit gamut mapping) and 148 named CSS colors
+- Deterministic perceptual palette extraction from caller-decoded, unpremultiplied RGBA8 pixels (bounded sampling; Oklab clustering; 1..32 colors)
 
 ## Bindings and use
 
