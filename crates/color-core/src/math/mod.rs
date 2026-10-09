@@ -18,18 +18,10 @@ impl Matrix3 {
 }
 
 /// Canonical CIE D50 white from CSS Color 4 xy chromaticities.
-pub const D50: [f64; 3] = [
-    0.3457 / 0.3585,
-    1.0,
-    (1.0 - 0.3457 - 0.3585) / 0.3585,
-];
+pub const D50: [f64; 3] = [0.3457 / 0.3585, 1.0, (1.0 - 0.3457 - 0.3585) / 0.3585];
 
 /// Canonical CIE D65 white from CSS Color 4 xy chromaticities.
-pub const D65: [f64; 3] = [
-    0.3127 / 0.3290,
-    1.0,
-    (1.0 - 0.3127 - 0.3290) / 0.3290,
-];
+pub const D65: [f64; 3] = [0.3127 / 0.3290, 1.0, (1.0 - 0.3127 - 0.3290) / 0.3290];
 
 /// Signed sRGB transfer function: encoded RGB -> linear light.
 #[must_use]

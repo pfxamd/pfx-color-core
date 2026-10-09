@@ -34,11 +34,7 @@ fn srgb_red_matches_w3c_xyz_d65_reference_matrix() {
     let xyz = red.to(ColorSpace::XyzD65).unwrap();
     check_channels(
         xyz.channels(),
-        [
-            506752.0 / 1228815.0,
-            87098.0 / 409605.0,
-            7918.0 / 409605.0,
-        ],
+        [506752.0 / 1228815.0, 87098.0 / 409605.0, 7918.0 / 409605.0],
         1e-14,
     );
 }
@@ -58,31 +54,30 @@ fn css_rec2020_reference_matrix_is_implemented_exactly() {
     let red = Color::new(ColorSpace::Rec2020Linear, [1.0, 0.0, 0.0], 1.0).unwrap();
     check_channels(
         red.to(ColorSpace::XyzD65).unwrap().channels(),
-        [
-            63426534.0 / 99577255.0,
-            26158966.0 / 99577255.0,
-            0.0,
-        ],
+        [63426534.0 / 99577255.0, 26158966.0 / 99577255.0, 0.0],
         1e-14,
     );
 }
 
 #[test]
 fn lab_d50_white_is_reference_white() {
-    let d50 = Color::new(
-        ColorSpace::XyzD50,
-        pfx_color_core::math::D50,
-        1.0,
-    )
-    .unwrap();
-    check_channels(d50.to(ColorSpace::Lab).unwrap().channels(), [100.0, 0.0, 0.0], 1e-12);
+    let d50 = Color::new(ColorSpace::XyzD50, pfx_color_core::math::D50, 1.0).unwrap();
+    check_channels(
+        d50.to(ColorSpace::Lab).unwrap().channels(),
+        [100.0, 0.0, 0.0],
+        1e-12,
+    );
 }
 
 #[test]
 fn oklab_matches_preexisting_pfx_reference() {
     let sample = Color::new(
         ColorSpace::Srgb,
-        [0x33 as f64 / 255.0, 0x66 as f64 / 255.0, 0x99 as f64 / 255.0],
+        [
+            0x33 as f64 / 255.0,
+            0x66 as f64 / 255.0,
+            0x99 as f64 / 255.0,
+        ],
         1.0,
     )
     .unwrap();
@@ -127,7 +122,11 @@ fn polar_oklch_hue_is_expressed_in_degrees() {
     let color = Color::new(ColorSpace::Oklab, [0.6, 0.0, 0.2], 1.0).unwrap();
     let polar = color.to(ColorSpace::Oklch).unwrap();
     check_channels(polar.channels(), [0.6, 0.2, 90.0], 1e-11);
-    check_channels(polar.to(ColorSpace::Oklab).unwrap().channels(), color.channels(), 1e-12);
+    check_channels(
+        polar.to(ColorSpace::Oklab).unwrap().channels(),
+        color.channels(),
+        1e-12,
+    );
 }
 
 #[test]
@@ -163,5 +162,8 @@ fn repeated_identical_space_conversion_preserves_exact_input() {
 #[test]
 fn non_finite_conversion_result_is_reported_as_error() {
     let huge = Color::new(ColorSpace::Srgb, [f64::MAX, 0.0, 0.0], 1.0).unwrap();
-    assert_eq!(huge.to(ColorSpace::XyzD65), Err(ColorError::NonFiniteResult));
+    assert_eq!(
+        huge.to(ColorSpace::XyzD65),
+        Err(ColorError::NonFiniteResult)
+    );
 }
