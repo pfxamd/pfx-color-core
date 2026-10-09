@@ -12,6 +12,8 @@ import { test } from "node:test";
 import {
   ColorJsAdapter,
   createGradient as legacyGradient,
+  generatePaletteFromAnchors as legacyAnchors,
+  generateCustomHarmony as legacyCustomHarmony,
   generateHarmony as legacyHarmony,
   generateColorStudy as legacyColorStudy,
   generateTonalPalette as legacyTonal,
@@ -325,5 +327,37 @@ test("seeded Color Study swatches remain perceptually close to the old UI genera
       assert.ok(distance < 0.04, "study " + randomSeed + " color " + i +
         " difference to old UI: " + distance);
     }
+  }
+});
+
+test("Rust anchored palette agrees with the existing multi-anchor UI generator", () => {
+  const anchors = [
+    srgb([0.2, 0.4, 0.6]),
+    srgb([0.4, 0.65, 0.35]),
+    srgb([0.75, 0.3, 0.2]),
+  ];
+  const actual = rust.anchoredPalette(anchors, {
+    count: 7, space: "srgb", target: "srgb", gamut: "css",
+  });
+  const expected = legacyAnchors(anchors.map(ts), {
+    count: 7, interpolationSpace: "srgb", targetSpace: "srgb",
+  });
+  assert.equal(actual.length, expected.colors.length);
+  for (let i = 0; i < actual.length; i++) {
+    assert.equal(actual[i].position, expected.colors[i].position);
+    assert.equal(actual[i].mapped, expected.colors[i].mapped);
+    compare(actual[i].color, expected.colors[i].value, "srgb", "anchor " + i);
+  }
+});
+
+test("Rust custom harmony agrees with existing hue-offset scheme", () => {
+  const seed = { space: "oklch", channels: [0.6, 0.02, 35], alpha: 1 };
+  const offsets = [-45, 0, 70, 180];
+  const actual = rust.customHarmony(seed, offsets, { target: "srgb", gamut: "css" });
+  const expected = legacyCustomHarmony(ts(seed), offsets, "srgb");
+  assert.equal(actual.length, expected.colors.length);
+  for (let i = 0; i < actual.length; i++) {
+    assert.equal(actual[i].hueOffset, expected.colors[i].hueOffset);
+    compare(actual[i].color, expected.colors[i].value, "srgb", "custom " + i);
   }
 });
