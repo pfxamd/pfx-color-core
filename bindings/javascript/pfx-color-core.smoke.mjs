@@ -134,7 +134,7 @@ test("Rust CSS parser and formatter handle HEX, modern RGB, HSL, HWB and P3", ()
 test("Rust CSS parsing refuses unsupported grammar and invalid UTF-8-safe inputs", () => {
   for (const value of [
     "rgb(none 0 0)", "rgb(var(--r) 0 0)", "rgb(255 1)",
-    "hsl(240 100 50)", "color(prophoto-rgb 0.1 0.2 0.3)",
+    "hsl(240 100 50)", "color(prophoto-rgb none 0.2 0.3)",
   ]) {
     assert.throws(() => api.parseCss(value), /CSS parse/);
   }
