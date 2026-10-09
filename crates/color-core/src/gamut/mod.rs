@@ -27,6 +27,8 @@ fn bounded_rgb(space: ColorSpace) -> bool {
             | ColorSpace::DisplayP3Linear
             | ColorSpace::Rec2020
             | ColorSpace::Rec2020Linear
+            | ColorSpace::A98Rgb
+            | ColorSpace::ProPhotoRgb
     )
 }
 
