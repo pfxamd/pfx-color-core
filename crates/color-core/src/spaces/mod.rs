@@ -27,6 +27,7 @@ pub enum ColorSpace {
     Hsv,
     A98Rgb,
     ProPhotoRgb,
+    LabD65,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
