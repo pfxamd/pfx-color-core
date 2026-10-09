@@ -208,6 +208,9 @@ void pfx_study_free(PfxStudy *study);
  * The output handle owns the colors, not the input pixel data.
  */
 typedef struct PfxImagePalette PfxImagePalette;
+/* Optional owned upload buffer for WebAssembly callers (64 MiB max). */
+uint8_t *pfx_image_buffer_new(uint32_t length);
+void pfx_image_buffer_free(uint8_t *pixels, uint32_t length);
 PfxImagePalette *pfx_image_new(
     const uint8_t *pixels, uint32_t byte_length, uint32_t width, uint32_t height,
     uint32_t count, uint32_t stride, uint32_t max_samples,
