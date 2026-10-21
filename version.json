@@ -3,8 +3,8 @@
   "kind": "core",
   "product": "PFx Color Core",
   "channel": "Alpha",
-  "version": "0.1.0",
-  "label": "Alpha 0.1.0",
-  "commit": "28aff99941787ee30f52742c36110bc4e03a8b7c",
-  "sourceDate": "2026-10-09T20:37:42+01:00"
+  "version": "0.1.1",
+  "label": "Alpha 0.1.1",
+  "commit": "58211371e37083dff2ea4f3f58c7b3f53acb6ade",
+  "sourceDate": "2026-10-21T14:52:40+01:00"
 }
