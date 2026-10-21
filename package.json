@@ -1,6 +1,6 @@
 {
   "name": "@pfxamd/color-core",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Independent color engine, palettes, harmonies, gradients and workspace for PFx tools",
   "license": "Apache-2.0",
   "type": "module",
