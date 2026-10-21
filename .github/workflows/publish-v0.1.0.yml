@@ -1,4 +1,4 @@
-name: Publish Core v0.1.0
+name: Publish Color Core
 
 on:
   push:
@@ -10,13 +10,17 @@ permissions:
 
 jobs:
   publish:
-    if: "${{ github.event_name == 'workflow_dispatch' || github.event.head_commit.message == 'release: v0.1.0' }}"
+    if: "${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'release: v') }}"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Resolve deterministic core version
+        run: node .pfx/release.mjs --sync
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Validate core
@@ -25,13 +29,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view v0.1.0 >/dev/null 2>&1; then
-            echo "v0.1.0 already published"
+          VERSION="$(node -p "require('./package.json').version")"
+          TAG="v$VERSION"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "$TAG already published"
             exit 0
           fi
           PACKAGE=$(npm pack --silent)
-          gh release create v0.1.0 "$PACKAGE" \
+          gh release create "$TAG" "$PACKAGE" \
             --target "$GITHUB_SHA" \
-            --title "PFx Color Core v0.1.0" \
+            --title "PFx Color Core $TAG" \
             --notes-file RELEASE_NOTES.md \
             --latest

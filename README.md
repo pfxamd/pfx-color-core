@@ -1,5 +1,7 @@
 # PFx Color Core
 
+[![Core version](./version-badge.svg)](./version.json)
+
 Independent, UI-free TypeScript color engine developed for **PFx Colors** and other PFx applications.
 
 ## Features
@@ -67,3 +69,7 @@ A new dependency-free Rust engine is being developed in [`crates/color-core/`](c
 The first-party color engine now includes a [C-compatible ABI](bindings/c/pfx_color_core.h) and a dependency-free [JavaScript/WASM wrapper](bindings/javascript/pfx-color-core.mjs). See the [integration guide](docs/portable-bindings.md). These do not replace the existing TypeScript UI yet.
 
 Tested standalone Rust libraries for use in other projects can be obtained from the successful [Rust Color Core CI workflow](https://github.com/pfxamd/pfx-color-core/actions/workflows/rust-core-ci.yml) build artifacts. The current PFx Colors web app continues using its pinned TypeScript engine until browser integration is verified.
+
+## Automatic source versions
+
+The badge, `version.json`, and package manifests share one Git-derived version. Run `node .pfx/release.mjs --sync` before a local build. Full Git history is required. Rebuilding the same source keeps the same number; metadata-only bot commits do not advance it. See [.pfx/RELEASE.md](.pfx/RELEASE.md).

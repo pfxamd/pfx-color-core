@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "kind": "core",
+  "product": "PFx Color Core",
+  "channel": "Alpha",
+  "version": "0.1.0",
+  "label": "Alpha 0.1.0",
+  "commit": "28aff99941787ee30f52742c36110bc4e03a8b7c",
+  "sourceDate": "2026-10-09T20:37:42+01:00"
+}

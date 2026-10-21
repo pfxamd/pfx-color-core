@@ -14,12 +14,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Resolve deterministic core version
+        run: node .pfx/release.mjs --sync
       - name: Build standalone first-party Rust WASM
         run: cargo build -p pfx-color-ffi --target wasm32-unknown-unknown --release
       - name: Install browser test runner (CI only)

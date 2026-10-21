@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "product": "PFx Color Core",
+  "channel": "Alpha",
+  "baseVersion": "0.1.0",
+  "baseline": "28aff99941787ee30f52742c36110bc4e03a8b7c",
+  "sourcePaths": [
+    "src",
+    "packages",
+    "crates",
+    "bindings",
+    "tokens",
+    "config",
+    "schema",
+    "scripts",
+    "package.json",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "Cargo.toml",
+    "Cargo.lock",
+    ".pfx",
+    ".github/workflows"
+  ],
+  "jsonVersions": [
+    "package.json"
+  ],
+  "cargoVersions": [
+    "crates/color-core/Cargo.toml",
+    "crates/color-ffi/Cargo.toml"
+  ],
+  "cargoNames": [],
+  "npmLocks": [],
+  "cargoLocks": []
+}
